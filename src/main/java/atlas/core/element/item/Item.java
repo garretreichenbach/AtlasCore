@@ -1,0 +1,32 @@
+package atlas.core.element.item;
+
+import api.config.BlockConfig;
+import atlas.core.AtlasCore;
+import atlas.core.element.ElementInterface;
+import org.schema.game.common.data.element.ElementInformation;
+
+public abstract class Item implements ElementInterface {
+
+	protected String name;
+	protected ElementInformation itemInfo;
+
+	protected Item(String name) {
+		this.name = name;
+	}
+
+	@Override
+	public void initData() {
+		itemInfo = BlockConfig.newElement(AtlasCore.getInstance(), name, new short[6]);
+		itemInfo.placable = false; // Items are not placable in the world like blocks, so set this to false.
+	}
+
+	@Override
+	public short getId() {
+		return itemInfo.id;
+	}
+
+	@Override
+	public ElementInformation getInfo() {
+		return itemInfo;
+	}
+}

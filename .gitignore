@@ -1,3 +1,5 @@
-/.idea/
-/out/
-/src/META-INF/
+.idea
+.gradle
+build
+.claude
+edencore_src
