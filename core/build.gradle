@@ -1,0 +1,20 @@
+dependencies {
+    implementation 'org.lz4:lz4-java:1.8.1'
+}
+
+tasks.register("updateVersion") {
+    doLast {
+        def modJson = file('src/main/resources/mod.json')
+        if (modJson.exists()) {
+            def content = modJson.getText()
+            content = content.replaceAll(/"version":\s*".*?"/, "\"version\": \"${version}\"")
+            modJson.write(content)
+        }
+    }
+}
+
+jar {
+    dependsOn("updateVersion")
+    archiveFileName = "AtlasCore-${version}.jar"
+    manifest.attributes('Main-Class': 'atlas.core.AtlasCore')
+}

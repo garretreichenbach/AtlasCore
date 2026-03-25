@@ -1,0 +1,19 @@
+dependencies {
+    compileOnly project(':core')
+}
+
+tasks.register("updateVersion") {
+    doLast {
+        def modJson = file('src/main/resources/mod.json')
+        if (modJson.exists()) {
+            def content = modJson.getText()
+            content = content.replaceAll(/"version":\s*".*?"/, "\"version\": \"${version}\"")
+            modJson.write(content)
+        }
+    }
+}
+
+jar {
+    dependsOn("updateVersion")
+    archiveFileName = "AtlasBuildSectors-${version}.jar"
+}

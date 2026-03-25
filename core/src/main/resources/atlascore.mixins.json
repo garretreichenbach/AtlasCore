@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8.7",
+  "package": "atlas.core.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "target": "@env(DEFAULT)",
+  "mixins": [],
+  "client": ["MixinCatalogPanelNew"],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
