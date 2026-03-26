@@ -83,7 +83,7 @@ public class AtlasGuide extends StarMod implements IAtlasSubMod {
 
 	@Override
 	public void onAtlasCoreReady() {
-		OPEN_GUIDE = PlayerActionRegistry.register(args -> openGuide());
+		OPEN_GUIDE = PlayerActionRegistry.register((args, sender) -> openGuide());
 		StarLoader.registerCommand(new GuideCommand());
 	}
 

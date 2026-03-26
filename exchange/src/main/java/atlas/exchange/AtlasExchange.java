@@ -81,12 +81,12 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	@Override
 	public void onAtlasCoreReady() {
 		registerExchangeDataType();
-		GIVE_ITEM = PlayerActionRegistry.register(args -> {
-			// args: [playerName, itemId, count, meta]
+		GIVE_ITEM = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only. args: [playerName, itemId, count, meta]
 			// TODO: implement server-side give item logic
 		});
-		ADD_BARS = PlayerActionRegistry.register(args -> {
-			// args: [playerName, bronzeCount, silverCount, goldCount]
+		ADD_BARS = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only. args: [playerName, bronzeCount, silverCount, goldCount]
 			// TODO: implement server-side bar credit logic
 		});
 	}

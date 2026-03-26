@@ -37,13 +37,16 @@ public class MyMod extends StarMod implements IAtlasSubMod {
 
 ```java
 // In onAtlasCoreReady():
-public static int MY_ACTION = PlayerActionRegistry.register(args -> {
-    String playerName = args[0];
+public static int MY_ACTION = PlayerActionRegistry.register((args, sender) -> {
+    // sender is the authenticated PlayerState on the server, null on the client.
+    // Always use sender.getName() for identity checks — never trust args for player name.
+    if(sender == null) return; // server-only action
+    String playerName = sender.getName();
     // handle action...
 });
 
-// From any client code:
-new PlayerActionCommandPacket(MyMod.MY_ACTION, playerName, "extra", "args").sendToServer();
+// From any client code (no need to include player name — server derives it from sender):
+new PlayerActionCommandPacket(MyMod.MY_ACTION, "extra", "args").sendToServer();
 ```
 
 ### Registering a data type

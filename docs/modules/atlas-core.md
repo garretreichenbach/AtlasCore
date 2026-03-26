@@ -86,8 +86,11 @@ Register server-side action handlers triggered by `PlayerActionCommandPacket`:
 ```java
 public static int MY_ACTION;
 
-MY_ACTION = PlayerActionRegistry.register(args -> {
-    // args[0], args[1], ... as passed by the packet
+MY_ACTION = PlayerActionRegistry.register((args, sender) -> {
+    // sender is the authenticated PlayerState on the server, null on the client.
+    // Use sender.getName() for identity — never trust args[n] for player name.
+    if(sender == null) return; // guard: server-only actions
+    // args[0], args[1], ... non-identity packet arguments
 });
 ```
 
