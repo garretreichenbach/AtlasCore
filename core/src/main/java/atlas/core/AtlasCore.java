@@ -14,17 +14,16 @@ import atlas.core.data.SerializableData;
 import atlas.core.data.misc.ControlBindingData;
 import atlas.core.data.player.PlayerData;
 import atlas.core.data.player.PlayerDataManager;
-import atlas.core.element.ElementRegistry;
-import atlas.core.network.PlayerActionCommandPacket;
-import atlas.core.tests.DataTypeRegistryTest;
-import atlas.core.tests.PlayerActionRegistryTest;
-import org.schema.game.server.test.TestRegistry;
-import atlas.core.network.SendDataPacket;
-import atlas.core.network.SyncRequestPacket;
 import atlas.core.manager.ConfigManager;
 import atlas.core.manager.EventManager;
+import atlas.core.network.PlayerActionCommandPacket;
+import atlas.core.network.SendDataPacket;
+import atlas.core.network.SyncRequestPacket;
+import atlas.core.tests.DataTypeRegistryTest;
+import atlas.core.tests.PlayerActionRegistryTest;
 import org.json.JSONObject;
 import org.schema.game.common.data.player.PlayerState;
+import org.schema.game.server.test.TestRegistry;
 
 import java.io.IOException;
 
@@ -48,7 +47,8 @@ public class AtlasCore extends StarMod {
 	}
 
 	@Override
-	public void onDisable() {}
+	public void onDisable() {
+	}
 
 	@Override
 	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
@@ -58,7 +58,7 @@ public class AtlasCore extends StarMod {
 
 	@Override
 	public void onServerCreated(ServerInitializeEvent event) {
-		final long tipInterval = ConfigManager.getTipIntervalMs();
+		long tipInterval = ConfigManager.getTipIntervalMs();
 		(new Thread("AtlasCore_Tip_Thread") {
 			@Override
 			public void run() {
@@ -87,7 +87,6 @@ public class AtlasCore extends StarMod {
 	@Override
 	public void onBlockConfigLoad(BlockConfig config) {
 		registerPlayerDataType();
-		ElementRegistry.registerElements();
 		SubModRegistry.fireAtlasCoreReady();
 		logInfo("AtlasCore initialized.");
 	}
@@ -126,7 +125,9 @@ public class AtlasCore extends StarMod {
 	private void registerPlayerDataType() {
 		DataTypeRegistry.register(new DataTypeRegistry.Entry() {
 			@Override
-			public String getName() { return "PLAYER_DATA"; }
+			public String getName() {
+				return "PLAYER_DATA";
+			}
 
 			@Override
 			public SerializableData deserializeNetwork(PacketReadBuffer buf) throws IOException {
