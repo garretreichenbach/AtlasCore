@@ -3,14 +3,14 @@ package atlas.buildsectors.mixin;
 import atlas.buildsectors.data.BuildSectorData;
 import atlas.buildsectors.data.BuildSectorDataManager;
 import org.schema.common.util.linAlg.Vector3i;
+import org.schema.game.client.data.PlayerControllable;
+import org.schema.game.common.controller.SendableSegmentController;
+import org.schema.game.common.data.blockeffects.PullEffect;
 import org.schema.game.common.data.player.PlayerState;
-import org.schema.game.common.data.player.playermessage.ServerMessage;
 import org.schema.game.common.data.world.SimpleTransformableSendableObject;
 import org.schema.game.server.controller.SectorSwitch;
-import org.schema.game.server.controller.effects.PullEffect;
 import org.schema.game.server.data.GameServerState;
-import org.schema.schine.network.objects.PlayerControllable;
-import org.schema.schine.network.objects.SendableSegmentController;
+import org.schema.schine.network.server.ServerMessage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -39,45 +39,41 @@ import java.util.List;
 @Mixin(value = SectorSwitch.class, remap = false)
 public abstract class MixinSectorSwitch {
 
-    @Shadow private SimpleTransformableSendableObject<?> o;
-    @Shadow private Vector3i belogingVector;
+	@Shadow
+	private SimpleTransformableSendableObject<?> o;
+	@Shadow
+	private Vector3i belogingVector;
 
-    @Inject(method = "execute", at = @At("HEAD"), cancellable = true)
-    private void onExecuteHead(GameServerState state, CallbackInfo ci) throws IOException {
-        if(!(o instanceof PlayerControllable)) return;
+	@Inject(method = "execute", at = @At("HEAD"), cancellable = true)
+	private void onExecuteHead(GameServerState state, CallbackInfo ci) throws IOException {
+		if(!(o instanceof PlayerControllable)) return;
 
-        List<PlayerState> players = ((PlayerControllable) o).getAttachedPlayers();
-        if(players == null || players.isEmpty()) return;
+		List<PlayerState> players = ((PlayerControllable) o).getAttachedPlayers();
+		if(players == null || players.isEmpty()) return;
 
-        BuildSectorDataManager mgr = BuildSectorDataManager.getInstance(true);
-        BuildSectorData sector = mgr.getFromSector(belogingVector, true);
-        if(sector == null) return; // not a build sector — let StarMade handle it normally
+		BuildSectorDataManager mgr = BuildSectorDataManager.getInstance(true);
+		BuildSectorData sector = mgr.getFromSector(belogingVector, true);
+		if(sector == null) return; // not a build sector — let StarMade handle it normally
 
-        for(PlayerState player : players) {
-            String name = player.getName();
-            boolean permitted = sector.getOwner().equals(name)
-                || sector.getPermissionsForUser(name) != null;
+		for(PlayerState player : players) {
+			String name = player.getName();
+			boolean permitted = sector.getOwner().equals(name) || sector.getPermissionsForUser(name) != null;
 
-            if(!permitted) {
-                player.sendServerMessage(new ServerMessage(
-                    "Cannot enter build sector: you have not been invited. "
-                        + "Ask " + sector.getOwner() + " to add you via the Build Sector menu.",
-                    ServerMessage.MESSAGE_TYPE_ERROR,
-                    player.getId()));
+			if(!permitted) {
+				player.sendServerMessage(new ServerMessage(new Object[]{"Cannot enter build sector: you have not been invited. " + "Ask " + sector.getOwner() + " to add you via the Build Sector menu."}, ServerMessage.MESSAGE_TYPE_ERROR, player.getId()));
 
-                if(o instanceof SendableSegmentController) {
-                    Vector3f force = new Vector3f(o.getWorldTransform().origin);
-                    float pullForce = force.length();
-                    force.normalize();
-                    ((SendableSegmentController) o).getBlockEffectManager().addEffect(
-                        new PullEffect((SendableSegmentController) o, force, pullForce, false, 5));
-                } else {
-                    o.warpTransformable(0, 0, 0, true, null);
-                }
+				if(o instanceof SendableSegmentController) {
+					Vector3f force = new Vector3f(o.getWorldTransform().origin);
+					float pullForce = force.length();
+					force.normalize();
+					((SendableSegmentController) o).getBlockEffectManager().addEffect(new PullEffect((SendableSegmentController) o, force, pullForce, false, 5));
+				} else {
+					o.warpTransformable(0, 0, 0, true, null);
+				}
 
-                ci.cancel();
-                return;
-            }
-        }
-    }
+				ci.cancel();
+				return;
+			}
+		}
+	}
 }

@@ -5,8 +5,12 @@
 	"compatibilityLevel": "JAVA_8",
 	"target": "@env(DEFAULT)",
 	"mixins": [],
-	"client": [],
-	"server": ["MixinSectorSwitch"],
+	"client": [
+		"MixinCatalogScrollableListNew"
+	],
+	"server": [
+		"MixinSectorSwitch"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	}
