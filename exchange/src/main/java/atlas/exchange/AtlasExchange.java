@@ -13,12 +13,14 @@ import atlas.core.data.misc.ControlBindingData;
 import atlas.core.data.player.PlayerData;
 import atlas.core.data.player.PlayerDataManager;
 import atlas.core.manager.PlayerActionRegistry;
+import atlas.core.utils.EntityUtils;
 import atlas.exchange.data.ExchangeData;
 import atlas.exchange.data.ExchangeDataManager;
 import atlas.exchange.element.ElementRegistry;
 import atlas.exchange.gui.ExchangeDialog;
 import atlas.exchange.tests.ExchangeDataTest;
 import com.bulletphysics.linearmath.Transform;
+import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.game.common.controller.ElementCountMap;
 import org.schema.game.common.controller.SegmentController;
@@ -27,6 +29,8 @@ import org.schema.game.common.data.element.meta.MetaObjectManager;
 import org.schema.game.common.data.element.meta.VirtualBlueprintMetaItem;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.common.data.player.inventory.NoSlotFreeException;
+import org.schema.game.common.data.world.Sector;
+import org.schema.game.common.data.world.SimpleTransformableSendableObject;
 import org.schema.game.server.controller.BluePrintController;
 import org.schema.game.server.data.GameServerState;
 import org.schema.game.server.data.PlayerNotFountException;
@@ -41,6 +45,7 @@ import org.schema.schine.graphicsengine.forms.gui.GUIElement;
 import org.schema.schine.input.InputState;
 import org.schema.schine.network.server.ServerMessage;
 
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -130,70 +135,103 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	}
 
 	/**
+	 * Returns the staging sector position for {@code playerName}.
+	 *
+	 * <p>Each player gets a unique sector at extreme coordinates that will never
+	 * be naturally loaded by StarMade (no players or generation activity will
+	 * occur there). Virtual blueprint entities are stored here between purchase
+	 * and the buyer loading them into a shipyard.</p>
+	 */
+	private static Vector3i getStagingSector(String playerName) {
+		int hash = Math.abs(playerName.hashCode()) % 1000000;
+		return new Vector3i(1500000 + hash, 0, 0);
+	}
+
+	/**
 	 * Spawns a virtual blueprint entity from {@code catalogName} in the buyer's
-	 * sector, immediately persists it to the database, removes it from the active
-	 * sector, and gives the buyer a {@link VirtualBlueprintMetaItem} pointing to
-	 * that entity's UID. The buyer can then load it into any shipyard via
-	 * LOAD_DESIGN without needing a pre-built ship.
+	 * dedicated staging sector, persists it to the database, removes it from the
+	 * active sector, and gives the buyer a {@link VirtualBlueprintMetaItem}.
+	 *
+	 * <p>The staging sector sits at extreme coordinates and is never naturally
+	 * loaded by the engine, so the entity safely lives in the database until the
+	 * buyer loads it into a shipyard via LOAD_DESIGN. The only time the sector is
+	 * activated is when we explicitly open it for the next purchase, at which
+	 * point orphaned virtual entities from previous errors are cleaned up first.
+	 * The player's current valid design (tracked in {@link PlayerData}) is always
+	 * skipped during cleanup so it cannot be accidentally invalidated.</p>
 	 */
 	private static void giveDesignItem(PlayerState buyer, String catalogName) {
+		String playerName = buyer.getName();
 		try {
+			Vector3i stagingPos = getStagingSector(playerName);
+			Sector stagingSector = GameServerState.instance.getUniverse().getSector(stagingPos);
+
+			// Find the UID the player currently owns so we don't delete it during cleanup.
+			PlayerDataManager pdm = PlayerDataManager.getInstance(true);
+			PlayerData playerData = pdm.getFromName(playerName, true);
+			String protectedUID = (playerData != null) ? playerData.getPendingExchangeDesignUID() : null;
+
+			// Permanently delete any orphaned virtual entities left by previous errors.
+			// Real entities (asteroids etc. from sector generation) are left untouched.
+			for(SimpleTransformableSendableObject<?> e : new ArrayList<>(stagingSector.getEntities())) {
+				if(e instanceof SegmentController && ((SegmentController) e).isVirtualBlueprint()) {
+					String uid = e.getUniqueIdentifier();
+					if(protectedUID == null || !protectedUID.equals(uid)) {
+						EntityUtils.delete((SegmentController) e);
+					}
+				}
+			}
+
+			// Spawn the blueprint entity into the staging sector.
 			Transform tr = new Transform();
 			tr.setIdentity();
-			String spawnName = "EXCHANGE_" + buyer.getName() + "_" + System.currentTimeMillis();
-			SegmentControllerOutline<?> outline = BluePrintController.active.loadBluePrint(
-					GameServerState.instance,
-					catalogName,
-					spawnName,
-					tr,
-					-1,
-					0, // neutral faction — design ownership is via the item, not the entity
-					buyer.getCurrentSector(),
-					buyer.getName(),
-					PlayerState.buffer,
-					null,
-					false,
-					new ChildStats(false));
+			String spawnName = "EXCHANGE_" + playerName + "_" + System.currentTimeMillis();
+			SegmentControllerOutline<?> outline = BluePrintController.active.loadBluePrint(GameServerState.instance, catalogName, spawnName, tr, -1, 0, stagingPos, playerName, PlayerState.buffer, null, false, new ChildStats(false));
 			if(outline == null) {
-				buyer.sendServerMessage("[Exchange] Failed to load blueprint for design.");
+				buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] Failed to load blueprint for design."}, ServerMessage.MESSAGE_TYPE_ERROR));
 				return;
 			}
-			SegmentController entity = outline.spawn(buyer.getCurrentSector(), false, new ChildStats(false), new SegmentControllerSpawnCallbackDirect(GameServerState.instance, buyer.getCurrentSector()) {
+			SegmentController entity = outline.spawn(stagingPos, false, new ChildStats(false), new SegmentControllerSpawnCallbackDirect(GameServerState.instance, stagingPos) {
 				@Override
 				public void onNoDocker() {
 				}
 			});
 			if(entity == null) {
-				buyer.sendServerMessage("[Exchange] Failed to create design entity.");
+				buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] Failed to create design entity."}, ServerMessage.MESSAGE_TYPE_ERROR));
 				return;
 			}
-			// Mark as virtual, persist to DB, then remove from the active sector.
-			// After this sequence the entity lives only in the database; the
-			// shipyard's loadDesign() will fetch it by UID when the player uses
-			// the item.
+
+			// Mark virtual, persist to DB, then remove from the active sector.
+			// Because the staging sector is never naturally loaded, the entity will
+			// not be subject to the 60-second virtual-blueprint auto-delete check
+			// until the sector is next activated (our next purchase call), at which
+			// point the cleanup above handles it before the timer can fire.
 			entity.setVirtualBlueprintRecursive(true);
 			GameServerState.instance.getController().writeSingleEntityWithDock(entity);
 			entity.setMarkedForDeleteVolatileIncludingDocks(true);
 
-			VirtualBlueprintMetaItem meta = (VirtualBlueprintMetaItem) MetaObjectManager.instantiate(
-					MetaObjectManager.MetaObjectType.VIRTUAL_BLUEPRINT.type, (short) -1, true);
+			VirtualBlueprintMetaItem meta = (VirtualBlueprintMetaItem) MetaObjectManager.instantiate(MetaObjectManager.MetaObjectType.VIRTUAL_BLUEPRINT.type, (short) -1, true);
 			meta.UID = entity.getUniqueIdentifier();
 			meta.virtualName = spawnName;
 
 			int slot;
 			try {
 				slot = buyer.getInventory().getFreeSlot();
-			} catch(NoSlotFreeException e) {
-				// Inventory filled up between validation and here — entity is already
-				// persisted so it won't be lost, but we can't deliver the item.
-				buyer.sendServerMessage("[Exchange] No free inventory slot — design was saved but could not be delivered. Contact an admin.");
+			} catch(NoSlotFreeException ex) {
+				buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] No free inventory slot — design was saved. Contact an admin to recover."}, ServerMessage.MESSAGE_TYPE_ERROR));
 				return;
 			}
 			buyer.getInventory().put(slot, meta);
 			buyer.getInventory().sendInventoryModification(slot);
+
+			// Record the new design UID so the next cleanup pass won't delete it.
+			if(playerData != null) {
+				playerData.setPendingExchangeDesignUID(entity.getUniqueIdentifier());
+				pdm.updateData(playerData, true);
+			}
 		} catch(Exception e) {
-			instance.logException("[Exchange] Failed to create design item for " + buyer.getName(), e);
-			buyer.sendServerMessage("[Exchange] An error occurred creating your design. Please contact an admin.");
+			instance.logException("[Exchange] Failed to create design item for " + playerName, e);
+			buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] An error occurred creating your design. Please contact an admin."}, ServerMessage.MESSAGE_TYPE_ERROR));
 		}
 	}
 

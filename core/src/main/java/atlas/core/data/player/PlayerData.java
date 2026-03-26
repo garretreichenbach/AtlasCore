@@ -26,6 +26,10 @@ public class PlayerData extends SerializableData {
 	private Vector3i lastRealSector = new Vector3i();
 	private Transform lastRealTransform = new Transform();
 	private int pendingExchangeCredits;
+	/**
+	 * UID of the virtual blueprint entity sitting in this player's staging sector, or empty if none.
+	 */
+	private String pendingExchangeDesignUID = "";
 
 	public PlayerData(String name, int factionId, Vector3i lastRealSector, Transform lastRealTransform) {
 		super("PLAYER_DATA");
@@ -69,6 +73,7 @@ public class PlayerData extends SerializableData {
 		lastRealTransformData.put("origin", lastRealTransformOrigin);
 		data.put("lastRealTransform", lastRealTransformData);
 		data.put("pendingExchangeCredits", pendingExchangeCredits);
+		data.put("pendingExchangeDesignUID", pendingExchangeDesignUID);
 		return data;
 	}
 
@@ -85,6 +90,7 @@ public class PlayerData extends SerializableData {
 		lastRealTransform.setIdentity();
 		lastRealTransform.origin.set((float) lastRealTransformOrigin.getDouble("x"), (float) lastRealTransformOrigin.getDouble("y"), (float) lastRealTransformOrigin.getDouble("z"));
 		pendingExchangeCredits = data.optInt("pendingExchangeCredits", 0);
+		pendingExchangeDesignUID = data.optString("pendingExchangeDesignUID", "");
 	}
 
 	@Override
@@ -174,5 +180,20 @@ public class PlayerData extends SerializableData {
 	 */
 	public void setPendingExchangeCredits(int amount) {
 		pendingExchangeCredits = amount;
+	}
+
+	/**
+	 * UID of the virtual blueprint entity sitting in this player's staging sector.
+	 * Empty string when the player has no pending exchange design. Persisted to disk only.
+	 */
+	public String getPendingExchangeDesignUID() {
+		return pendingExchangeDesignUID;
+	}
+
+	/**
+	 * Sets the pending exchange design UID without auto-saving; caller must call {@code updateData} explicitly.
+	 */
+	public void setPendingExchangeDesignUID(String uid) {
+		pendingExchangeDesignUID = (uid != null) ? uid : "";
 	}
 }
