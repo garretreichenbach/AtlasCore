@@ -7,7 +7,6 @@ import api.listener.events.player.PlayerSpawnEvent;
 import api.mod.StarMod;
 import atlas.banking.data.BankingData;
 import atlas.banking.data.BankingDataManager;
-import atlas.banking.element.ElementRegistry;
 import atlas.banking.gui.BankingDialog;
 import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
@@ -28,7 +27,6 @@ import org.schema.schine.input.InputState;
 public class AtlasBanking extends StarMod implements IAtlasSubMod {
 
 	public static int SET_CREDITS;
-	public static int ADD_BARS;
 	private static AtlasBanking instance;
 
 	public AtlasBanking() {
@@ -63,9 +61,7 @@ public class AtlasBanking extends StarMod implements IAtlasSubMod {
 	// ── IAtlasSubMod ─────────────────────────────────────────────────────────
 
 	@Override
-	public void onBlockConfigLoad(BlockConfig config) {
-		ElementRegistry.registerElements();
-	}
+	public void onBlockConfigLoad(BlockConfig config) {}
 
 	@Override
 	public String getModId() {
@@ -87,10 +83,6 @@ public class AtlasBanking extends StarMod implements IAtlasSubMod {
 				double amount = Double.parseDouble(args[1]);
 				BankingDataManager.getInstance(true).setPlayerCredits(playerName, amount, true);
 			}
-		});
-
-		ADD_BARS = PlayerActionRegistry.register(args -> {
-			// TODO: Add prize bar implementation when element system is wired up
 		});
 	}
 

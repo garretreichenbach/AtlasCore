@@ -1,15 +1,15 @@
-package atlas.banking.element.item;
+package atlas.exchange.element.item;
 
 import api.config.BlockConfig;
-import atlas.banking.AtlasBanking;
 import atlas.core.element.item.Item;
+import atlas.exchange.AtlasExchange;
 import org.schema.game.common.data.element.ElementKeyMap;
 import org.schema.schine.graphicsengine.core.GraphicsContext;
 
 public class SilverBar extends Item {
 
 	public SilverBar() {
-		super("Silver Bar", AtlasBanking.getInstance());
+		super("Silver Bar", AtlasExchange.getInstance());
 	}
 
 	@Override

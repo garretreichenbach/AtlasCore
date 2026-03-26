@@ -11,6 +11,7 @@ import atlas.core.data.misc.ControlBindingData;
 import atlas.core.manager.PlayerActionRegistry;
 import atlas.exchange.data.ExchangeData;
 import atlas.exchange.data.ExchangeDataManager;
+import atlas.exchange.element.ElementRegistry;
 import atlas.exchange.gui.ExchangeDialog;
 import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.schine.graphicsengine.core.MouseEvent;
@@ -30,10 +31,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	/** Action ID for giving an item to a player on the server side. Registered in {@link #onAtlasCoreReady()}. */
 	public static int GIVE_ITEM = -1;
 
-	/**
-	 * Action ID for crediting Gold Bars to a seller (resolved from AtlasBanking at runtime).
-	 * Will be -1 if AtlasBanking is not loaded.
-	 */
+	/** Action ID for crediting Gold Bars to a seller. Registered in {@link #onAtlasCoreReady()}. */
 	public static int ADD_BARS = -1;
 
 	public AtlasExchange() {
@@ -61,7 +59,9 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	}
 
 	@Override
-	public void onBlockConfigLoad(BlockConfig config) {}
+	public void onBlockConfigLoad(BlockConfig config) {
+		ElementRegistry.registerElements();
+	}
 
 	// ── IAtlasSubMod ─────────────────────────────────────────────────────────
 
@@ -78,15 +78,10 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 			// args: [playerName, itemId, count, meta]
 			// TODO: implement server-side give item logic
 		});
-		// Resolve ADD_BARS from AtlasBanking via reflection if available
-		if(SubModRegistry.isLoaded("atlas_banking")) {
-			try {
-				java.lang.reflect.Field field = Class.forName("atlas.banking.AtlasBanking").getField("ADD_BARS");
-				ADD_BARS = field.getInt(null);
-			} catch(Exception e) {
-				logWarning("Could not resolve AtlasBanking.ADD_BARS: " + e.getMessage());
-			}
-		}
+		ADD_BARS = PlayerActionRegistry.register(args -> {
+			// args: [playerName, bronzeCount, silverCount, goldCount]
+			// TODO: implement server-side bar credit logic
+		});
 	}
 
 	@Override
