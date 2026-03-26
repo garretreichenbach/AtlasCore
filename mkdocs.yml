@@ -6,7 +6,7 @@ repo_name: garretreichenbach/AtlasCore
 
 theme:
   name: material
-  palette:  
+  palette:
     - scheme: slate
       primary: deep purple
       accent: purple
