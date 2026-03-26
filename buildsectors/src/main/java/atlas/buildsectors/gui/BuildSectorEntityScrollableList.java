@@ -1,8 +1,11 @@
 package atlas.buildsectors.gui;
 
 import api.common.GameClient;
+import api.network.packets.PacketUtil;
+import atlas.buildsectors.AtlasBuildSectors;
 import atlas.buildsectors.data.BuildSectorData;
-import atlas.core.utils.EntityUtils;
+import atlas.buildsectors.data.BuildSectorDataManager;
+import atlas.core.network.PlayerActionCommandPacket;
 import org.schema.common.util.StringTools;
 import org.schema.game.client.data.GameClientState;
 import org.schema.schine.graphicsengine.core.MouseEvent;
@@ -141,7 +144,10 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 		buttonPane.addButton(0, 0, "WARP TO", GUIHorizontalArea.HButtonColor.YELLOW, new GUICallback() {
 			@Override
 			public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
-				if(mouseEvent.pressedLeftMouse()) EntityUtils.warpPlayerIntoEntity(entityData.getEntity());
+				if(mouseEvent.pressedLeftMouse()) {
+					PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+						AtlasBuildSectors.ENTER_BUILD_SECTOR, user, buildSectorData.getUUID()));
+				}
 			}
 
 			@Override
@@ -194,7 +200,8 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
-						entityData.setAIActive(false);
+						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+							AtlasBuildSectors.TOGGLE_AI, entityData.getEntityUID(), "false", user));
 						clear();
 					}
 				}
@@ -206,9 +213,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				}
 			}, new GUIActivationCallback() {
 				@Override
-				public boolean isVisible(InputState inputState) {
-					return true;
-				}
+				public boolean isVisible(InputState inputState) { return true; }
 
 				@Override
 				public boolean isActive(InputState inputState) {
@@ -220,7 +225,8 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
-						entityData.setAIActive(true);
+						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+							AtlasBuildSectors.TOGGLE_AI, entityData.getEntityUID(), "true", user));
 						clear();
 					}
 				}
@@ -232,9 +238,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				}
 			}, new GUIActivationCallback() {
 				@Override
-				public boolean isVisible(InputState inputState) {
-					return true;
-				}
+				public boolean isVisible(InputState inputState) { return true; }
 
 				@Override
 				public boolean isActive(InputState inputState) {
@@ -247,8 +251,8 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			@Override
 			public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 				if(mouseEvent.pressedLeftMouse()) {
-					if(entityData.getEntity() == null) return;
-					buildSectorData.removeEntity(entityData.getEntity(), false);
+					PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+						AtlasBuildSectors.DELETE_ENTITY, entityData.getEntityUID(), user));
 					clear();
 				}
 			}
@@ -260,9 +264,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			}
 		}, new GUIActivationCallback() {
 			@Override
-			public boolean isVisible(InputState inputState) {
-				return true;
-			}
+			public boolean isVisible(InputState inputState) { return true; }
 
 			@Override
 			public boolean isActive(InputState inputState) {
@@ -274,7 +276,10 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			@Override
 			public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 				if(mouseEvent.pressedLeftMouse()) {
-					entityData.deleteTurrets();
+					// Turrets are docked children — deleting the root entity on the server
+					// will also remove all docked objects (EntityUtils.delete handles recursion).
+					PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+						AtlasBuildSectors.DELETE_ENTITY, entityData.getEntityUID(), user));
 					clear();
 				}
 			}
@@ -286,9 +291,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			}
 		}, new GUIActivationCallback() {
 			@Override
-			public boolean isVisible(InputState inputState) {
-				return true;
-			}
+			public boolean isVisible(InputState inputState) { return true; }
 
 			@Override
 			public boolean isActive(InputState inputState) {
@@ -300,7 +303,10 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			buttonPane.addButton(2, 1, "SET VULNERABLE", GUIHorizontalArea.HButtonColor.RED, new GUICallback() {
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
-					if(mouseEvent.pressedLeftMouse()) entityData.setInvulnerable(false, false);
+					if(mouseEvent.pressedLeftMouse()) {
+						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+							AtlasBuildSectors.SET_INVULNERABLE, entityData.getEntityUID(), "false", user));
+					}
 				}
 
 				@Override
@@ -310,9 +316,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				}
 			}, new GUIActivationCallback() {
 				@Override
-				public boolean isVisible(InputState inputState) {
-					return true;
-				}
+				public boolean isVisible(InputState inputState) { return true; }
 
 				@Override
 				public boolean isActive(InputState inputState) {
@@ -323,7 +327,10 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			buttonPane.addButton(2, 1, "SET INVULNERABLE", GUIHorizontalArea.HButtonColor.GREEN, new GUICallback() {
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
-					if(mouseEvent.pressedLeftMouse()) entityData.setInvulnerable(true, false);
+					if(mouseEvent.pressedLeftMouse()) {
+						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+							AtlasBuildSectors.SET_INVULNERABLE, entityData.getEntityUID(), "true", user));
+					}
 				}
 
 				@Override
@@ -333,9 +340,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				}
 			}, new GUIActivationCallback() {
 				@Override
-				public boolean isVisible(InputState inputState) {
-					return true;
-				}
+				public boolean isVisible(InputState inputState) { return true; }
 
 				@Override
 				public boolean isActive(InputState inputState) {

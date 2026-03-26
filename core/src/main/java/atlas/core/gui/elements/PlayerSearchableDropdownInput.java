@@ -3,7 +3,6 @@ package atlas.core.gui.elements;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.schema.game.client.controller.PlayerGameDropDownInput;
 import org.schema.game.client.data.GameClientState;
-import org.schema.schine.common.OnInputChangedCallback;
 import org.schema.schine.common.TextCallback;
 import org.schema.schine.common.language.Lng;
 import org.schema.schine.graphicsengine.core.settings.PrefixNotFoundException;
@@ -50,13 +49,9 @@ public abstract class PlayerSearchableDropdownInput extends PlayerGameDropDownIn
 				return null;
 			}
 
-		}, new OnInputChangedCallback() {
-
-			@Override
-			public String onInputChanged(String t) {
-				updateDropdown(t);
-				return t;
-			}
+		}, t -> {
+			updateDropdown(t);
+			return t;
 		});
 
 		searchBar.setPos(0, 24, 0);

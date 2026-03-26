@@ -1,17 +1,17 @@
 {
-  "name": "AtlasBanking",
-  "author": "VideoGoose",
-  "description": "Player banking, economy, and prize bar system for Atlas servers.",
-  "version": "1.0.0",
-  "starmade_version": "0.205.4",
-  "client_mod": true,
-  "server_mod": true,
-  "main_class": "atlas.banking.AtlasBanking",
-  "smd_resource_id": 10001,
-  "dependencies": [
-    9999
-  ],
-  "core_mod": false,
-  "requires_class_resize": false,
-  "hard_load_all_classes": false
+	"name": "AtlasBanking",
+	"author": "VideoGoose",
+	"description": "Player banking, economy, and prize bar system for Atlas servers.",
+	"version": "1.0.0",
+	"starmade_version": "0.205.4",
+	"client_mod": true,
+	"server_mod": true,
+	"main_class": "atlas.banking.AtlasBanking",
+	"smd_resource_id": 10001,
+	"dependencies": [
+		9999
+	],
+	"core_mod": false,
+	"requires_class_resize": false,
+	"hard_load_all_classes": false
 }

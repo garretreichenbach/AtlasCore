@@ -1,12 +1,12 @@
 {
 	"required": true,
 	"minVersion": "0.8.7",
-	"package": "atlas.core.mixin",
+	"package": "atlas.buildsectors.mixin",
 	"compatibilityLevel": "JAVA_8",
 	"target": "@env(DEFAULT)",
 	"mixins": [],
-	"client": ["MixinCatalogPanelNew"],
-	"server": [],
+	"client": [],
+	"server": ["MixinSectorSwitch"],
 	"injectors": {
 		"defaultRequire": 1
 	}

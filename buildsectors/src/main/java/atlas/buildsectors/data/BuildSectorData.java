@@ -75,7 +75,6 @@ public class BuildSectorData extends SerializableData {
 
     @Override
     public JSONObject serialize() {
-        doEntityUpdateCheck();
         JSONObject data = new JSONObject();
         data.put("version", VERSION);
         data.put("uuid", getUUID());
@@ -116,12 +115,11 @@ public class BuildSectorData extends SerializableData {
         for(int i = 0; i < permissionsArray.length(); i++) {
             JSONObject permissionData = permissionsArray.getJSONObject(i);
             String username = permissionData.getString("name");
+            // Get-or-create the map for this user so multiple entries accumulate correctly.
+            HashMap<PermissionTypes, Boolean> permMap = permissions.computeIfAbsent(username, k -> new HashMap<>());
             for(PermissionTypes type : PermissionTypes.values()) {
                 if(permissionData.has(type.name())) {
-                    boolean value = permissionData.getBoolean(type.name());
-                    HashMap<PermissionTypes, Boolean> permission = new HashMap<>();
-                    permission.put(type, value);
-                    permissions.put(username, permission);
+                    permMap.put(type, permissionData.getBoolean(type.name()));
                 }
             }
         }
@@ -129,7 +127,6 @@ public class BuildSectorData extends SerializableData {
 
     @Override
     public void serializeNetwork(PacketWriteBuffer writeBuffer) throws IOException {
-        doEntityUpdateCheck();
         writeBuffer.writeByte(VERSION);
         writeBuffer.writeString(dataUUID);
         writeBuffer.writeString(owner);
@@ -269,33 +266,52 @@ public class BuildSectorData extends SerializableData {
 
     public Set<BuildSectorEntityData> getEntities() {
         if(entities == null) entities = new HashSet<>();
-        doEntityUpdateCheck();
+        if(GameCommon.isOnSinglePlayer() || GameCommon.isClientConnectedToServer()) {
+            doEntityUpdateCheck();
+        } else {
+            prune(); // server-side: safe prune only, no entity scan
+        }
         return entities;
     }
 
+    /**
+     * Client-side refresh: prunes stale entity entries then scans the local object
+     * container for any entities in this sector that aren't yet registered.
+     *
+     * <p><strong>Only call from the client.</strong> On the server, call {@link #prune()}
+     * directly — the GUI list and the local-object scan are not available there.
+     */
     public void doEntityUpdateCheck() {
         prune();
+        // Entity-scan is client-side only: the server doesn't have a local GUI object list.
+        if(!GameCommon.isOnSinglePlayer() && !GameCommon.isClientConnectedToServer()) return;
         for(Sendable sendable : GameCommon.getGameState().getState().getLocalAndRemoteObjectContainer().getLocalObjects().values()) {
             if(sendable instanceof SegmentController) {
                 SegmentController entity = (SegmentController) sendable;
                 if(entity.getSector(new Vector3i()).equals(sector) && entity.existsInState() && getEntityData(entity) == null) {
-                    addEntity(entity, entity.isOnServer());
+                    // Pass server=false: this is a client-side cache update only.
+                    addEntity(entity, false);
                 }
             }
         }
     }
 
+    /**
+     * Removes entity entries whose underlying entity is null or has left this sector.
+     * Safe to call on both client and server (no GUI side-effects).
+     */
     public void prune() {
-        boolean hasDirty = false;
         ObjectArrayList<BuildSectorEntityData> toRemove = new ObjectArrayList<>();
         for(BuildSectorEntityData entityData : entities) {
             if(entityData.getEntity() == null || !entityData.getEntity().getSector(new Vector3i()).equals(sector)) {
                 toRemove.add(entityData);
-                hasDirty = true;
             }
         }
-        for(BuildSectorEntityData entityData : toRemove) entities.remove(entityData);
-        if(hasDirty) BuildSectorEntityScrollableList.update();
+        if(!toRemove.isEmpty()) {
+            for(BuildSectorEntityData entityData : toRemove) entities.remove(entityData);
+            // Notify the GUI list only if we're on the client and it exists.
+            BuildSectorEntityScrollableList.update();
+        }
     }
 
     public BuildSectorEntityData getEntityData(SegmentController entity) {
@@ -321,11 +337,13 @@ public class BuildSectorData extends SerializableData {
             if(entityData.getEntity() == null) continue;
             if(entityData.getEntity().equals(entity)) {
                 toRemove = entityData;
-                entityData.delete();
                 break;
             }
         }
-        if(toRemove != null) entities.remove(toRemove);
+        if(toRemove != null) {
+            entities.remove(toRemove);
+            BuildSectorDataManager.getInstance(server).updateData(this, server);
+        }
     }
 
     public void updateEntity(SegmentController entity, boolean server) {
@@ -546,11 +564,11 @@ public class BuildSectorData extends SerializableData {
             for(int i = 0; i < permissionsArray.length(); i++) {
                 JSONObject permissionData = permissionsArray.getJSONObject(i);
                 String name = permissionData.getString("name");
+                // Get-or-create so all entries for the same user accumulate correctly.
+                HashMap<PermissionTypes, Boolean> permMap = permissions.computeIfAbsent(name, k -> new HashMap<>());
                 for(PermissionTypes type : PermissionTypes.values()) {
                     if(permissionData.has(type.name())) {
-                        HashMap<PermissionTypes, Boolean> permission = new HashMap<>();
-                        permission.put(type, permissionData.getBoolean(type.name()));
-                        permissions.put(name, permission);
+                        permMap.put(type, permissionData.getBoolean(type.name()));
                     }
                 }
             }
@@ -643,7 +661,10 @@ public class BuildSectorData extends SerializableData {
         public String getEntityUID() { return entityUID; }
         public SegmentController getEntity() { return BuildSectorData.getEntity(entityUID); }
         public EntityType getEntityType() { return entityType; }
-        public String getSpawner() { return getEntity().getSpawner(); }
+        public String getSpawner() {
+            SegmentController e = getEntity();
+            return e != null ? e.getSpawner() : "";
+        }
 
         public boolean getPermission(String user, PermissionTypes type) {
             HashMap<PermissionTypes, Boolean> permissionMap = permissions.get(user);

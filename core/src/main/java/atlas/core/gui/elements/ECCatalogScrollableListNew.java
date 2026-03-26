@@ -1,5 +1,6 @@
 package atlas.core.gui.elements;
 
+import atlas.core.api.SubModRegistry;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.schema.common.util.StringTools;
 import org.schema.game.client.controller.PlayerGameOkCancelInput;
@@ -29,7 +30,6 @@ import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.config.GuiDateFormats;
 import org.schema.schine.input.InputState;
-import atlas.core.api.SubModRegistry;
 
 import java.util.List;
 import java.util.Locale;
@@ -42,13 +42,13 @@ import java.util.Set;
  */
 public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 
-	protected CatalogPermission selected;
 	private final boolean showPrice;
 	private final boolean selectSingle;
 	private final int mode;
+	private final GUIElement p;
+	protected CatalogPermission selected;
 	private boolean spawnDocked;
 	private boolean useOwnFaction;
-	private final GUIElement p;
 
 	public ECCatalogScrollableListNew(InputState state, GUIElement p, int personalOnly, boolean showPrice, boolean selectSingle) {
 		super(state, p, personalOnly, showPrice, selectSingle);
@@ -61,12 +61,33 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		((GameClientState) getState()).getPlayer().getCatalog().addObserver(this);
 	}
 
+	/**
+	 * Returns true if AtlasBuildSectors is loaded and the player is in a build sector
+	 * that grants the SPAWN permission. Uses reflection to avoid a hard compile-time
+	 * dependency on the buildsectors module.
+	 */
+	private static boolean getBuildSectorSpawnPermission(PlayerState player) {
+		if(!SubModRegistry.isLoaded("atlas_buildsectors")) return false;
+		try {
+			Class<?> managerClass = Class.forName("atlas.buildsectors.data.BuildSectorDataManager");
+			Object manager = managerClass.getMethod("getInstance", boolean.class).invoke(null, false);
+			Object sectorData = managerClass.getMethod("getCurrentBuildSector", PlayerState.class).invoke(manager, player);
+			if(sectorData == null) return false;
+			Class<?> dataClass = Class.forName("atlas.buildsectors.data.BuildSectorData");
+			Class<?> permType = Class.forName("atlas.buildsectors.data.BuildSectorData$PermissionTypes");
+			Object spawnPerm = Enum.valueOf((Class<Enum>) permType, "SPAWN");
+			return (boolean) dataClass.getMethod("getPermission", String.class, permType).invoke(sectorData, player.getName(), spawnPerm);
+		} catch(Exception e) {
+			return false;
+		}
+	}
+
 	@Override
 	public void updateListEntries(GUIElementList mainList, Set<CatalogPermission> collection) {
 		mainList.deleteObservers();
 		mainList.addObserver(this);
-		final CatalogManager catalogManager = ((GameClientState) getState()).getGameState().getCatalogManager();
-		for(final CatalogPermission f : collection) {
+		CatalogManager catalogManager = ((GameClientState) getState()).getGameState().getCatalogManager();
+		for(CatalogPermission f : collection) {
 			assert (f.getUid() != null);
 			GUITextOverlayTable nameText = new GUITextOverlayTable(10, 10, getState());
 			GUITextOverlayTable typeText = new GUITextOverlayTable(10, 10, getState());
@@ -99,16 +120,18 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 			priceText.getPos().y = heightInset;
 			classText.getPos().y = heightInset;
 			dateText.getPos().y = heightInset;
-			final CatalogRow row;
-			if(showPrice) row = new CatalogRow(getState(), f, nameAnchorP, typeText, classAnchorP, dateText, massText, priceText, ratingText);
-			else row = new CatalogRow(getState(), f, nameAnchorP, typeText, classAnchorP, dateText, massText, ratingText);
+			CatalogRow row;
+			if(showPrice)
+				row = new CatalogRow(getState(), f, nameAnchorP, typeText, classAnchorP, dateText, massText, priceText, ratingText);
+			else
+				row = new CatalogRow(getState(), f, nameAnchorP, typeText, classAnchorP, dateText, massText, ratingText);
 			if(!selectSingle) {
 				float height = 56.0f;
 				row.expanded = new GUIElementList(getState());
 
-				final String owner = Lng.str("Owner: %s\n", f.ownerUID);
-				final String created = Lng.str("Created: %s\n", GuiDateFormats.catalogEntryCreated.format(f.date));
-				final GUITextOverlayTableInnerDescription description = new GUITextOverlayTableInnerDescription(10, 10, getState());
+				String owner = Lng.str("Owner: %s\n", f.ownerUID);
+				String created = Lng.str("Created: %s\n", GuiDateFormats.catalogEntryCreated.format(f.date));
+				GUITextOverlayTableInnerDescription description = new GUITextOverlayTableInnerDescription(10, 10, getState());
 				description.setTextSimple(new Object() {
 					@Override
 					public String toString() {
@@ -134,7 +157,7 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 				row.expanded.add(new GUIListElement(descriptionAnchor, descriptionAnchor, getState()));
 
 				if(f.score != null) {
-					final GUIAncor statsAnchor = new GUIAncor(getState(), 100, 128) {
+					GUIAncor statsAnchor = new GUIAncor(getState(), 100, 128) {
 						@Override
 						public void draw() {
 							setWidth(p.getWidth() - 28.0f);
@@ -167,8 +190,8 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 				};
 
 				// Optionally check build sector spawn permission via reflection (avoids hard dep on AtlasBuildSectors)
-				final boolean inBuildSector = getBuildSectorSpawnPermission(((GameClientState) getState()).getPlayer());
-				final boolean canSpawn = isPlayerAdmin() || inBuildSector;
+				boolean inBuildSector = getBuildSectorSpawnPermission(((GameClientState) getState()).getPlayer());
+				boolean canSpawn = isPlayerAdmin() || inBuildSector;
 				int columns = 2;
 				if(isPlayerAdmin() || inBuildSector) columns++;
 				if(canEdit(f)) columns += 4;
@@ -270,7 +293,8 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 					buttonPane.addButton(x, 0, Lng.str("EDIT PERMISSIONS"), GUIHorizontalArea.HButtonColor.YELLOW, new GUICallback() {
 						@Override
 						public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
-							if(mouseEvent.pressedLeftMouse() && canEdit(f)) (new CatalogPermissionEditDialog(((GameClientState) getState()), f)).activate();
+							if(mouseEvent.pressedLeftMouse() && canEdit(f))
+								(new CatalogPermissionEditDialog(((GameClientState) getState()), f)).activate();
 						}
 
 						@Override
@@ -312,7 +336,7 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 							buttons.onInit();
 							((GUIDialogWindow) detailsPopup.getInputPanel().background).getMainContentPane().getContent(0).attach(buttons);
 
-							final GUIBlueprintConsistenceScrollableList sc = new GUIBlueprintConsistenceScrollableList(getState(), ((GUIDialogWindow) detailsPopup.getInputPanel().background).getMainContentPane().getContent(1));
+							GUIBlueprintConsistenceScrollableList sc = new GUIBlueprintConsistenceScrollableList(getState(), ((GUIDialogWindow) detailsPopup.getInputPanel().background).getMainContentPane().getContent(1));
 							sc.onInit();
 							((GUIDialogWindow) detailsPopup.getInputPanel().background).getMainContentPane().getContent(1).attach(sc);
 							detailsPopup.getInputPanel().setOkButton(false);
@@ -447,7 +471,7 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		}
 	}
 
-	private void changeOwner(final CatalogPermission permission) {
+	private void changeOwner(CatalogPermission permission) {
 		String description = Lng.str("Change the owner of \"%s\"", permission.getUid());
 		PlayerGameTextInput pp = new PlayerGameTextInput("CatalogExtendedPanel_changeOwner", (GameClientState) getState(), 50, Lng.str("Change Owner"), description, permission.ownerUID) {
 			@Override
@@ -502,7 +526,7 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		pp.activate();
 	}
 
-	private void deleteEntry(final CatalogPermission permission) {
+	private void deleteEntry(CatalogPermission permission) {
 		boolean admin = ((GameClientState) getState()).getPlayer().getNetworkObject().isAdminClient.get();
 		if(!admin && !((GameClientState) getState()).getPlayer().getName().toLowerCase(Locale.ENGLISH).equals(permission.ownerUID.toLowerCase(Locale.ENGLISH))) {
 			((GameClientState) getState()).getController().popupAlertTextMessage(Lng.str("ERROR:\nCannot delete!\nYou do not own this!"), 0);
@@ -538,7 +562,7 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		}
 	}
 
-	private void buyEntry(final CatalogPermission permission) {
+	private void buyEntry(CatalogPermission permission) {
 
 		if(!((GameClientState) getState()).isInShopDistance()) {
 			((GameClientState) getState()).getController().popupAlertTextMessage(Lng.str("ERROR:\nCannot buy!\nYou are not near a shop!"), 0);
@@ -627,7 +651,8 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		GUICheckBoxTextPair useSpawnDocked = new GUICheckBoxTextPair(getState(), new Object() {
 			@Override
 			public String toString() {
-				if(BuildModeDrawer.currentPiece != null && BuildModeDrawer.currentPiece.isValid() && BuildModeDrawer.currentPiece.getInfo().isRailDockable()) return Lng.str("Spawn docked");
+				if(BuildModeDrawer.currentPiece != null && BuildModeDrawer.currentPiece.isValid() && BuildModeDrawer.currentPiece.getInfo().isRailDockable())
+					return Lng.str("Spawn docked");
 				else return Lng.str("Spawn docked (must be aiming at a rail block)");
 			}
 		}, 280, FontLibrary.getBlenderProMedium14(), 24) {
@@ -644,7 +669,8 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 
 			@Override
 			public void activate() {
-				if((BuildModeDrawer.currentPiece != null && BuildModeDrawer.currentPiece.isValid() && BuildModeDrawer.currentPiece.getInfo().isRailDockable())) spawnDocked = true;
+				if((BuildModeDrawer.currentPiece != null && BuildModeDrawer.currentPiece.isValid() && BuildModeDrawer.currentPiece.getInfo().isRailDockable()))
+					spawnDocked = true;
 				else {
 					((GameClientState) getState()).getController().popupAlertTextMessage(Lng.str("Must be aiming at a rail block!"), 0);
 					spawnDocked = false;
@@ -656,7 +682,7 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		pp.activate();
 	}
 
-	private void buyEntryAsMeta(final CatalogPermission permission) {
+	private void buyEntryAsMeta(CatalogPermission permission) {
 		if(!((GameClientState) getState()).isInShopDistance()) {
 			((GameClientState) getState()).getController().popupAlertTextMessage(Lng.str("ERROR:\nCannot buy!\nYou are not near a shop!"), 0);
 		}
@@ -695,7 +721,7 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		}).activate();
 	}
 
-	private void load(final CatalogPermission permission) {
+	private void load(CatalogPermission permission) {
 		String description = Lng.str("Please type in a name for your new Ship!");
 		PlayerGameTextInput pp = new PlayerGameTextInput("CatalogScrollableListNew_f_load", (GameClientState) getState(), 400, 240, 50, Lng.str("New Ship"), description, permission.getUid() + "_" + System.currentTimeMillis()) {
 			@Override
@@ -785,7 +811,8 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		GUICheckBoxTextPair useSpawnDocked = new GUICheckBoxTextPair(getState(), new Object() {
 			@Override
 			public String toString() {
-				if(BuildModeDrawer.currentPiece != null && BuildModeDrawer.currentPiece.isValid() && BuildModeDrawer.currentPiece.getInfo().isRailDockable()) return Lng.str("Spawn docked");
+				if(BuildModeDrawer.currentPiece != null && BuildModeDrawer.currentPiece.isValid() && BuildModeDrawer.currentPiece.getInfo().isRailDockable())
+					return Lng.str("Spawn docked");
 				else return Lng.str("Spawn docked (must be aiming at a rail block)");
 			}
 		}, 280, FontLibrary.getBlenderProMedium14(), 24) {
@@ -836,27 +863,6 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		protected void clickedOnRow() {
 			selectedSingle = f;
 			super.clickedOnRow();
-		}
-	}
-
-	/**
-	 * Returns true if AtlasBuildSectors is loaded and the player is in a build sector
-	 * that grants the SPAWN permission. Uses reflection to avoid a hard compile-time
-	 * dependency on the buildsectors module.
-	 */
-	private static boolean getBuildSectorSpawnPermission(PlayerState player) {
-		if(!SubModRegistry.isLoaded("atlas_buildsectors")) return false;
-		try {
-			Class<?> managerClass = Class.forName("atlas.buildsectors.data.BuildSectorDataManager");
-			Object manager = managerClass.getMethod("getInstance", boolean.class).invoke(null, false);
-			Object sectorData = managerClass.getMethod("getCurrentBuildSector", PlayerState.class).invoke(manager, player);
-			if(sectorData == null) return false;
-			Class<?> dataClass = Class.forName("atlas.buildsectors.data.BuildSectorData");
-			Class<?> permType = Class.forName("atlas.buildsectors.data.BuildSectorData$PermissionTypes");
-			Object spawnPerm = Enum.valueOf((Class<Enum>) permType, "SPAWN");
-			return (boolean) dataClass.getMethod("getPermission", String.class, permType).invoke(sectorData, player.getName(), spawnPerm);
-		} catch(Exception e) {
-			return false;
 		}
 	}
 }
