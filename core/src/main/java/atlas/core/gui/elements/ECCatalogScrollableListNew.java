@@ -29,8 +29,7 @@ import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.config.GuiDateFormats;
 import org.schema.schine.input.InputState;
-import thederpgamer.edencore.data.buildsectordata.BuildSectorData;
-import thederpgamer.edencore.data.buildsectordata.BuildSectorDataManager;
+import atlas.core.api.SubModRegistry;
 
 import java.util.List;
 import java.util.Locale;
@@ -167,10 +166,11 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 					}
 				};
 
-				BuildSectorData buildSectorData = BuildSectorDataManager.getInstance(false).getCurrentBuildSector(((GameClientState) getState()).getPlayer());
-				final boolean canSpawn = isPlayerAdmin() || (buildSectorData != null && buildSectorData.getPermission(((GameClientState) getState()).getPlayer().getName(), BuildSectorData.PermissionTypes.SPAWN));
+				// Optionally check build sector spawn permission via reflection (avoids hard dep on AtlasBuildSectors)
+				final boolean inBuildSector = getBuildSectorSpawnPermission(((GameClientState) getState()).getPlayer());
+				final boolean canSpawn = isPlayerAdmin() || inBuildSector;
 				int columns = 2;
-				if(isPlayerAdmin() || buildSectorData != null) columns++;
+				if(isPlayerAdmin() || inBuildSector) columns++;
 				if(canEdit(f)) columns += 4;
 
 				GUIHorizontalButtonTablePane buttonPane = new GUIHorizontalButtonTablePane(getState(), columns, 1, buttonAnchor);
@@ -836,6 +836,27 @@ public class ECCatalogScrollableListNew extends CatalogScrollableListNew {
 		protected void clickedOnRow() {
 			selectedSingle = f;
 			super.clickedOnRow();
+		}
+	}
+
+	/**
+	 * Returns true if AtlasBuildSectors is loaded and the player is in a build sector
+	 * that grants the SPAWN permission. Uses reflection to avoid a hard compile-time
+	 * dependency on the buildsectors module.
+	 */
+	private static boolean getBuildSectorSpawnPermission(PlayerState player) {
+		if(!SubModRegistry.isLoaded("atlas_buildsectors")) return false;
+		try {
+			Class<?> managerClass = Class.forName("atlas.buildsectors.data.BuildSectorDataManager");
+			Object manager = managerClass.getMethod("getInstance", boolean.class).invoke(null, false);
+			Object sectorData = managerClass.getMethod("getCurrentBuildSector", PlayerState.class).invoke(manager, player);
+			if(sectorData == null) return false;
+			Class<?> dataClass = Class.forName("atlas.buildsectors.data.BuildSectorData");
+			Class<?> permType = Class.forName("atlas.buildsectors.data.BuildSectorData$PermissionTypes");
+			Object spawnPerm = Enum.valueOf((Class<Enum>) permType, "SPAWN");
+			return (boolean) dataClass.getMethod("getPermission", String.class, permType).invoke(sectorData, player.getName(), spawnPerm);
+		} catch(Exception e) {
+			return false;
 		}
 	}
 }

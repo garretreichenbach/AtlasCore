@@ -1,7 +1,10 @@
 package atlas.buildsectors;
 
 import api.config.BlockConfig;
+import api.listener.Listener;
 import api.listener.events.controller.ClientInitializeEvent;
+import api.listener.events.draw.RegisterWorldDrawersEvent;
+import api.mod.StarLoader;
 import api.listener.events.player.PlayerJoinWorldEvent;
 import api.listener.events.player.PlayerSpawnEvent;
 import api.mod.StarMod;
@@ -12,8 +15,8 @@ import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
 import atlas.core.data.DataTypeRegistry;
 import atlas.core.data.misc.ControlBindingData;
+import atlas.buildsectors.drawer.BuildSectorHudDrawer;
 import atlas.core.manager.PlayerActionRegistry;
-import atlas.core.network.PlayerActionCommandPacket;
 import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.GUIActivationHighlightCallback;
@@ -57,6 +60,12 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 	public void onClientCreated(ClientInitializeEvent event) {
 		ControlBindingData.load(this);
 		ControlBindingData.registerBinding(this, "Open Build Sector Menu", "Opens the Build Sector menu.", 55 /* G */);
+		StarLoader.registerListener(RegisterWorldDrawersEvent.class, new Listener<RegisterWorldDrawersEvent>() {
+			@Override
+			public void onEvent(RegisterWorldDrawersEvent e) {
+				e.getModDrawables().add(new BuildSectorHudDrawer());
+			}
+		}, this);
 	}
 
 	@Override
@@ -75,17 +84,11 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 		registerBuildSectorDataType();
 
 		ENTER_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
-			if(args.length >= 1) {
-				String playerName = args[0];
-				BuildSectorDataManager.getInstance(true).enterBuildSector(playerName);
-			}
+			// TODO: implement sector teleport via GameServer.executeAdminCommand
 		});
 
 		LEAVE_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
-			if(args.length >= 1) {
-				String playerName = args[0];
-				BuildSectorDataManager.getInstance(true).leaveBuildSector(playerName);
-			}
+			// TODO: implement return-to-normal-space teleport
 		});
 	}
 
@@ -143,9 +146,7 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 
 			@Override
 			public atlas.core.data.SerializableData deserializeJSON(org.json.JSONObject obj) {
-				BuildSectorData data = new BuildSectorData();
-				data.deserialize(obj);
-				return data;
+				return new BuildSectorData(obj);
 			}
 
 			@Override

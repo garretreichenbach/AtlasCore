@@ -3,7 +3,6 @@ def docsResourceDir = layout.projectDirectory.dir('src/main/resources/docs')
 
 dependencies {
     compileOnly project(':core')
-    implementation 'org.commonmark:commonmark:0.21.0'
 }
 
 tasks.register('syncDocumentationResources', Sync) {

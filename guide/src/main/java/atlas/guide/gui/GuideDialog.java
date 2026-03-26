@@ -1,7 +1,10 @@
 package atlas.guide.gui;
 
+import api.common.GameClient;
 import atlas.guide.manager.GuideManager;
 import atlas.guide.util.MarkdownGuiBlockRenderer;
+import org.schema.game.client.controller.PlayerInput;
+import org.schema.game.client.view.gui.GUIInputPanel;
 import org.schema.game.client.view.mainmenu.MarkdownDocRenderer;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.*;
@@ -13,137 +16,85 @@ import java.util.List;
 /**
  * In-game guide dialog that renders markdown documents using StarMade's native GUI system.
  *
- * <p>Layout:
- * <ul>
- *   <li><b>Left panel (~220 px)</b> — scrollable list of document title buttons</li>
- *   <li><b>Right panel (remaining width)</b> — scrollable content area rendered by
- *       {@link MarkdownGuiBlockRenderer} using StarMade's {@link MarkdownDocRenderer}</li>
- * </ul>
+ * <p>Each registered guide document appears as a separate tab. The active tab's content
+ * is rendered via {@link MarkdownGuiBlockRenderer} using StarMade's {@link MarkdownDocRenderer}.
  *
  * <p>This fully replaces the old {@code glossarPanel} / Glossar library approach from EdenCore.
+ *
+ * @author TheDerpGamer
  */
-public class GuideDialog extends GUIElement implements GUIActiveInterface {
+public class GuideDialog extends PlayerInput {
 
-    private static final int WIDTH       = 900;
-    private static final int HEIGHT      = 600;
-    private static final int LIST_WIDTH  = 220;
-    private static final int CONTENT_W   = WIDTH - LIST_WIDTH - 20;
+    private final GuidePanel panel;
 
-    private GUIMainWindow window;
-    private GUIAncor      contentAnchor;
-    private boolean       initialized;
-
-    // ── constructors ──────────────────────────────────────────────────────────
-
-    public GuideDialog(InputState state) {
-        super(state);
-    }
-
-    /** Convenience — creates and activates the dialog from any context. */
     public GuideDialog() {
-        this(api.common.GameClient.getClientState());
-    }
-
-    public void activate() {
-        if(!initialized) onInit();
-        setActive(true);
-    }
-
-    // ── GUIActiveInterface ────────────────────────────────────────────────────
-
-    @Override
-    public void onInit() {
-        if(window != null) window.cleanUp();
-
-        window = new GUIMainWindow(getState(), WIDTH, HEIGHT, "GuideDialog");
-        window.onInit();
-        window.orientate(ORIENTATION_HORIZONTAL_MIDDLE | ORIENTATION_VERTICAL_MIDDLE);
-
-        window.setCloseCallback(new GUICallback() {
-            @Override
-            public void callback(GUIElement e, MouseEvent event) {
-                if(event.pressedLeftMouse()) {
-                    getState().getWorldDrawer().getGuiDrawer().getPlayerPanel().deactivateAll();
-                }
-            }
-            @Override
-            public boolean isOccluded() {
-                return !getState().getController().getPlayerInputs().isEmpty();
-            }
-        });
-
-        buildContent();
-        initialized = true;
+        super(GameClient.getClientState());
+        (panel = new GuidePanel(getState(), this)).onInit();
     }
 
     @Override
-    public void draw() {
-        if(!initialized) onInit();
-        window.draw();
-    }
+    public void onDeactivate() {}
 
     @Override
-    public void cleanUp() {
-        if(window != null) window.cleanUp();
-        initialized = false;
-    }
+    public void handleMouseEvent(MouseEvent mouseEvent) {}
 
-    // ── private helpers ───────────────────────────────────────────────────────
+    @Override
+    public GuidePanel getInputPanel() { return panel; }
 
-    private void buildContent() {
-        GUIContentPane tab = window.addTab("Guide");
-        GUIPane root = tab.getContent(0);
+    public static class GuidePanel extends GUIInputPanel {
 
-        // Title list — left side
-        GUIPane listPane = new GUIPane(getState(), root, LIST_WIDTH, HEIGHT - 60);
-        listPane.onInit();
-        listPane.setPos(0, 0, 0);
-        root.attach(listPane);
-        buildTitleList(listPane);
+        private GUITabbedContent tabbedContent;
 
-        // Content area — right side (scrollable)
-        GUIScrollablePane scrollPane = new GUIScrollablePane(getState(), root,
-                CONTENT_W, HEIGHT - 60);
-        scrollPane.onInit();
-        scrollPane.setPos(LIST_WIDTH + 10, 0, 0);
-        root.attach(scrollPane);
-
-        contentAnchor = new GUIAncor(getState(), CONTENT_W, HEIGHT - 60);
-        contentAnchor.onInit();
-        scrollPane.setContent(contentAnchor);
-
-        // Render the first doc by default
-        List<String> titles = GuideManager.getTitles();
-        if(!titles.isEmpty()) renderDoc(titles.get(0));
-    }
-
-    private void buildTitleList(GUIPane parent) {
-        List<String> titles = GuideManager.getTitles();
-        int y = 5;
-        for(final String title : titles) {
-            GUITextButton btn = new GUITextButton(getState(), parent, title);
-            btn.setCallback(new GUICallback() {
-                @Override
-                public void callback(GUIElement e, MouseEvent event) {
-                    if(event.pressedLeftMouse()) renderDoc(title);
-                }
-                @Override
-                public boolean isOccluded() { return false; }
-            });
-            btn.onInit();
-            btn.setPos(4, y, 0);
-            parent.attach(btn);
-            y += 24;
+        public GuidePanel(InputState state, GUICallback guiCallback) {
+            super("GuidePanel", state, 900, 600, guiCallback, "", "");
         }
-    }
 
-    private void renderDoc(String title) {
-        if(contentAnchor == null) return;
-        contentAnchor.cleanUp();
-        contentAnchor.onInit();
+        @Override
+        public void onInit() {
+            super.onInit();
+            GUIContentPane contentPane = ((GUIDialogWindow) background).getMainContentPane();
+            contentPane.setTextBoxHeightLast(500);
 
-        String markdown = GuideManager.getRaw(title);
-        List<MarkdownDocRenderer.RenderedBlock> blocks = MarkdownDocRenderer.render(markdown);
-        MarkdownGuiBlockRenderer.renderBlocks(getState(), contentAnchor, blocks, CONTENT_W - 16, 8);
+            if(tabbedContent != null) tabbedContent.clearTabs();
+            tabbedContent = new GUITabbedContent(getState(), contentPane.getContent(0));
+            tabbedContent.onInit();
+
+            List<String> titles = GuideManager.getTitles();
+            if(titles.isEmpty()) {
+                GUIContentPane noDocsTab = tabbedContent.addTab("Guide");
+                noDocsTab.setTextBoxHeightLast(460);
+                GUIAncor textAnchor = new GUIAncor(getState(), 860, 460);
+                GUITextOverlay text = new GUITextOverlay(860, 460, getState());
+                text.onInit();
+                text.setTextSimple("No guide documents are registered.");
+                textAnchor.attach(text);
+                noDocsTab.getContent(0).attach(textAnchor);
+            } else {
+                for(final String title : titles) {
+                    GUIContentPane tab = tabbedContent.addTab(title);
+                    tab.setTextBoxHeightLast(460);
+                    GUIAncor textAnchor = new GUIAncor(getState(), 860, 460) {
+                        boolean rendered = false;
+                        @Override
+                        public void draw() {
+                            super.draw();
+                            if(!rendered) {
+                                rendered = true;
+                                renderDoc(title, this);
+                            }
+                        }
+                    };
+                    tab.getContent(0).attach(textAnchor);
+                }
+            }
+
+            contentPane.getContent(0).attach(tabbedContent);
+        }
+
+        private void renderDoc(String title, GUIAncor anchor) {
+            String markdown = GuideManager.getRaw(title);
+            List<MarkdownDocRenderer.RenderedBlock> blocks = MarkdownDocRenderer.render(markdown);
+            MarkdownGuiBlockRenderer.renderBlocks(getState(), anchor, blocks, (int) anchor.getWidth() - 16, 8);
+        }
     }
 }

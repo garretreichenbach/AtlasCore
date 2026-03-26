@@ -127,9 +127,7 @@ public class AtlasCore extends StarMod {
 
 			@Override
 			public SerializableData deserializeJSON(JSONObject obj) {
-				PlayerData data = new PlayerData();
-				data.deserialize(obj);
-				return data;
+				return new PlayerData(obj);
 			}
 
 			@Override

@@ -7,13 +7,14 @@ import api.listener.events.player.PlayerSpawnEvent;
 import api.mod.StarMod;
 import atlas.banking.data.BankingData;
 import atlas.banking.data.BankingDataManager;
+import atlas.banking.element.PrizeBars;
 import atlas.banking.gui.BankingDialog;
 import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
 import atlas.core.data.DataTypeRegistry;
 import atlas.core.data.misc.ControlBindingData;
 import atlas.core.manager.PlayerActionRegistry;
-import atlas.core.network.PlayerActionCommandPacket;
+
 import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.GUIActivationHighlightCallback;
@@ -57,7 +58,9 @@ public class AtlasBanking extends StarMod implements IAtlasSubMod {
 	}
 
 	@Override
-	public void onBlockConfigLoad(BlockConfig config) {}
+	public void onBlockConfigLoad(BlockConfig config) {
+		PrizeBars.register();
+	}
 
 	// ── IAtlasSubMod ─────────────────────────────────────────────────────────
 
@@ -138,9 +141,7 @@ public class AtlasBanking extends StarMod implements IAtlasSubMod {
 
 			@Override
 			public atlas.core.data.SerializableData deserializeJSON(org.json.JSONObject obj) {
-				BankingData data = new BankingData();
-				data.deserialize(obj);
-				return data;
+				return new BankingData(obj);
 			}
 
 			@Override

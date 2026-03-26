@@ -88,6 +88,13 @@ public class BankingDataManager extends DataManager<BankingData> {
 		return null;
 	}
 
+	public BankingData getFromUUID(String uuid, boolean server) {
+		for(BankingData data : (server ? getServerCache() : getClientCache())) {
+			if(data.getUUID().equals(uuid)) return data;
+		}
+		return null;
+	}
+
 	public void setPlayerCredits(String playerName, double amount, boolean server) {
 		BankingData data = getFromPlayerName(playerName, server);
 		if(data != null) {

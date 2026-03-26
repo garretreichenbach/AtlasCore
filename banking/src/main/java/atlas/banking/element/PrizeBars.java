@@ -1,98 +1,124 @@
 package atlas.banking.element;
 
 import api.config.BlockConfig;
-import atlas.core.AtlasCore;
+import atlas.banking.AtlasBanking;
 import atlas.core.element.item.Item;
-import atlas.core.element.items.ItemGroup;
-import org.schema.game.common.data.element.ElementCategory;
 import org.schema.game.common.data.element.ElementKeyMap;
 import org.schema.schine.graphicsengine.core.GraphicsContext;
 
 /**
- * <Description>
+ * Prize bars (Bronze, Silver, Gold) used as the currency for exchange purchases.
+ * Call {@link #register()} from {@code AtlasBanking.onBlockConfigLoad()}.
  *
  * @author TheDerpGamer
- * @version 1.0 - [09/17/2021]
  */
-public class PrizeBars implements ItemGroup {
-	@Override
-	public Item[] getItems() {
-		return new Item[] {new BronzeBar(), new SilverBar(), new GoldBar()};
-	}
+public class PrizeBars {
 
-	@Override
-	public ElementCategory getCategory() {
-		return atlas.core.element.ElementRegistry.getCategory("Items");
-	}
+    public static void register() {
+        new BronzeBar().register();
+        new SilverBar().register();
+        new GoldBar().register();
+    }
 
-	@Override
-	public String getMultiSlot() {
-		return "prizebars";
-	}
+    // ── Inner items ───────────────────────────────────────────────────────────
 
-	public class BronzeBar extends Item {
-		public BronzeBar() {
-			super("Bronze Bar", getCategory());
-		}
+    public static class BronzeBar extends Item {
 
-		@Override
-		public void initialize() {
-			if(GraphicsContext.initialized) {
-				itemInfo.setTextureId(ElementKeyMap.getInfo(341).getTextureIds());
-				itemInfo.setBuildIconNum(ElementKeyMap.getInfo(341).getBuildIconNum());
-			}
-			itemInfo.setDescription("A rare bronze bar which can be redeemed for unique prizes at the server shop.");
-			itemInfo.setInRecipe(false);
-			itemInfo.setShoppable(false);
-			itemInfo.setPlacable(false);
-			itemInfo.setPhysical(false);
-			itemInfo.volume = 0.05f;
-			itemInfo.mass = 0.05f;
-			BlockConfig.add(itemInfo);
-		}
-	}
+        public BronzeBar() {
+            super("Bronze Bar", AtlasBanking.getInstance());
+        }
 
-	public class SilverBar extends Item {
-		public SilverBar() {
-			super("Silver Bar", getCategory());
-		}
+        /** Call once during block config load to fully initialize and add the item. */
+        public void register() {
+            initData();
+            postInitData();
+            initResources();
+        }
 
-		@Override
-		public void initialize() {
-			if(GraphicsContext.initialized) {
-				itemInfo.setTextureId(ElementKeyMap.getInfo(342).getTextureIds());
-				itemInfo.setBuildIconNum(ElementKeyMap.getInfo(342).getBuildIconNum());
-			}
-			itemInfo.setDescription("An esteemed silver bar which can be redeemed for unique prizes at the server shop.");
-			itemInfo.setInRecipe(false);
-			itemInfo.setShoppable(false);
-			itemInfo.setPlacable(false);
-			itemInfo.setPhysical(false);
-			itemInfo.volume = 0.05f;
-			itemInfo.mass = 0.05f;
-			BlockConfig.add(itemInfo);
-		}
-	}
+        @Override
+        public void postInitData() {
+            itemInfo.setDescription("A rare bronze bar which can be redeemed for unique prizes at the server shop.");
+            itemInfo.setInRecipe(false);
+            itemInfo.setShoppable(false);
+            itemInfo.setPlacable(false);
+            itemInfo.setPhysical(false);
+            itemInfo.volume = 0.05f;
+            itemInfo.mass   = 0.05f;
+            BlockConfig.add(itemInfo);
+        }
 
-	public class GoldBar extends Item {
-		public GoldBar() {
-			super("Gold Bar", getCategory());
-		}
+        @Override
+        public void initResources() {
+            if(GraphicsContext.initialized) {
+                itemInfo.setTextureId(ElementKeyMap.getInfo(341).getTextureIds());
+                itemInfo.setBuildIconNum(ElementKeyMap.getInfo(341).getBuildIconNum());
+            }
+        }
+    }
 
-		@Override
-		public void initialize() {
-			if(GraphicsContext.initialized) {
-				itemInfo.setTextureId(ElementKeyMap.getInfo(343).getTextureIds());
-				itemInfo.setBuildIconNum(ElementKeyMap.getInfo(343).getBuildIconNum());
-			}
-			itemInfo.setDescription("An exquisite gold bar which can be redeemed for unique prizes at the server shop.");
-			itemInfo.setInRecipe(false);
-			itemInfo.setShoppable(false);
-			itemInfo.setPlacable(false);
-			itemInfo.setPhysical(false);
-			itemInfo.volume = 0.05f;
-			itemInfo.mass = 0.05f;
-			BlockConfig.add(itemInfo);
-		}
-	}
+    public static class SilverBar extends Item {
+
+        public SilverBar() {
+            super("Silver Bar", AtlasBanking.getInstance());
+        }
+
+        public void register() {
+            initData();
+            postInitData();
+            initResources();
+        }
+
+        @Override
+        public void postInitData() {
+            itemInfo.setDescription("An esteemed silver bar which can be redeemed for unique prizes at the server shop.");
+            itemInfo.setInRecipe(false);
+            itemInfo.setShoppable(false);
+            itemInfo.setPlacable(false);
+            itemInfo.setPhysical(false);
+            itemInfo.volume = 0.05f;
+            itemInfo.mass   = 0.05f;
+            BlockConfig.add(itemInfo);
+        }
+
+        @Override
+        public void initResources() {
+            if(GraphicsContext.initialized) {
+                itemInfo.setTextureId(ElementKeyMap.getInfo(342).getTextureIds());
+                itemInfo.setBuildIconNum(ElementKeyMap.getInfo(342).getBuildIconNum());
+            }
+        }
+    }
+
+    public static class GoldBar extends Item {
+
+        public GoldBar() {
+            super("Gold Bar", AtlasBanking.getInstance());
+        }
+
+        public void register() {
+            initData();
+            postInitData();
+            initResources();
+        }
+
+        @Override
+        public void postInitData() {
+            itemInfo.setDescription("An exquisite gold bar which can be redeemed for unique prizes at the server shop.");
+            itemInfo.setInRecipe(false);
+            itemInfo.setShoppable(false);
+            itemInfo.setPlacable(false);
+            itemInfo.setPhysical(false);
+            itemInfo.volume = 0.05f;
+            itemInfo.mass   = 0.05f;
+            BlockConfig.add(itemInfo);
+        }
+
+        @Override
+        public void initResources() {
+            if(GraphicsContext.initialized) {
+                itemInfo.setTextureId(ElementKeyMap.getInfo(343).getTextureIds());
+                itemInfo.setBuildIconNum(ElementKeyMap.getInfo(343).getBuildIconNum());
+            }
+        }
+    }
 }
