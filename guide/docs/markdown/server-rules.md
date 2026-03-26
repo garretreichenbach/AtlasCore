@@ -16,7 +16,7 @@ may result in bans, ship/station deletion, and penalties for everyone involved.
 ## Gameplay Rules
 
 - Do not use cheats, glitches, or exploits. Report bugs to a staff member.
-- Do not intentionally create server lag. Entities lagging the server may be deleted
+- Do not intentionally create server lag. Entities lagging the server may be deleted.
   by staff without compensation.
 - Do not create home-bases on planets.
 - Do not attack or capture public infrastructure such as warpgates.

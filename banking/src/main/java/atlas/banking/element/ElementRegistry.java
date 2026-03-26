@@ -1,14 +1,21 @@
-package atlas.core.element;
+package atlas.banking.element;
 
 import api.config.BlockConfig;
-import atlas.core.AtlasCore;
+import atlas.banking.AtlasBanking;
+import atlas.banking.element.item.BronzeBar;
+import atlas.banking.element.item.GoldBar;
+import atlas.banking.element.item.SilverBar;
+import atlas.core.element.ElementInterface;
 import org.schema.game.common.data.element.ElementInformation;
+
 
 /**
  * Central registry that defines and registers all mod blocks/chambers/weapons/etc. by implementing the ElementInterface and adding them to the enum.
  */
 public enum ElementRegistry {
-	;
+	BRONZE_BAR(new BronzeBar()),
+	SILVER_BAR(new SilverBar()),
+	GOLD_BAR(new GoldBar());
 
 	public final ElementInterface elementInterface;
 
@@ -20,22 +27,22 @@ public enum ElementRegistry {
 		for(ElementRegistry registry : values()) {
 			registry.elementInterface.initData();
 		}
-		AtlasCore.getInstance().logDebug("Initialized element data for " + values().length + " elements");
+		AtlasBanking.getInstance().logInfo("Initialized element data for " + values().length + " elements");
 
 		for(ElementRegistry registry : values()) {
 			registry.elementInterface.postInitData();
 		}
-		AtlasCore.getInstance().logDebug("Initialized element data for " + values().length + " elements");
+		AtlasBanking.getInstance().logInfo("Initialized element data for " + values().length + " elements");
 
 		for(ElementRegistry registry : values()) {
 			registry.elementInterface.initResources();
 		}
-		AtlasCore.getInstance().logDebug("Initialized element resources for " + values().length + " elements");
+		AtlasBanking.getInstance().logInfo("Initialized element resources for " + values().length + " elements");
 
 		for(ElementRegistry registry : values()) {
 			BlockConfig.add(registry.getInfo());
 		}
-		AtlasCore.getInstance().logDebug("Initialized element resources for " + values().length + " elements");
+		AtlasBanking.getInstance().logInfo("Initialized element resources for " + values().length + " elements");
 	}
 
 	private static ElementInformation getInfoByName(String name) {

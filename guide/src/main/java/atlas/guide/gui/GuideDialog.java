@@ -2,13 +2,17 @@ package atlas.guide.gui;
 
 import api.common.GameClient;
 import atlas.guide.manager.GuideManager;
-import atlas.guide.util.MarkdownGuiBlockRenderer;
 import org.schema.game.client.controller.PlayerInput;
 import org.schema.game.client.view.gui.GUIInputPanel;
 import org.schema.game.client.view.mainmenu.MarkdownDocRenderer;
+import org.schema.game.client.view.mainmenu.MarkdownGuiBlockRenderer;
 import org.schema.schine.graphicsengine.core.MouseEvent;
-import org.schema.schine.graphicsengine.forms.gui.*;
-import org.schema.schine.graphicsengine.forms.gui.newgui.*;
+import org.schema.schine.graphicsengine.forms.gui.GUIAncor;
+import org.schema.schine.graphicsengine.forms.gui.GUICallback;
+import org.schema.schine.graphicsengine.forms.gui.GUITextOverlay;
+import org.schema.schine.graphicsengine.forms.gui.newgui.GUIContentPane;
+import org.schema.schine.graphicsengine.forms.gui.newgui.GUIDialogWindow;
+import org.schema.schine.graphicsengine.forms.gui.newgui.GUITabbedContent;
 import org.schema.schine.input.InputState;
 
 import java.util.List;
@@ -17,7 +21,7 @@ import java.util.List;
  * In-game guide dialog that renders markdown documents using StarMade's native GUI system.
  *
  * <p>Each registered guide document appears as a separate tab. The active tab's content
- * is rendered via {@link MarkdownGuiBlockRenderer} using StarMade's {@link MarkdownDocRenderer}.
+ * is rendered using StarMade's {@link MarkdownDocRenderer}.
  *
  * <p>This fully replaces the old {@code glossarPanel} / Glossar library approach from EdenCore.
  *
@@ -70,11 +74,11 @@ public class GuideDialog extends PlayerInput {
                 textAnchor.attach(text);
                 noDocsTab.getContent(0).attach(textAnchor);
             } else {
-                for(final String title : titles) {
+                for(String title : titles) {
                     GUIContentPane tab = tabbedContent.addTab(title);
                     tab.setTextBoxHeightLast(460);
                     GUIAncor textAnchor = new GUIAncor(getState(), 860, 460) {
-                        boolean rendered = false;
+                        boolean rendered;
                         @Override
                         public void draw() {
                             super.draw();

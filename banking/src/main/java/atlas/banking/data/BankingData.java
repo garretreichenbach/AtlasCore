@@ -63,7 +63,9 @@ public class BankingData extends SerializableData {
 		storedCredits = data.getDouble("storedCredits");
 		transactionHistory.clear();
 		JSONArray transactionArray = data.getJSONArray("transactionHistory");
-		for(int i = 0; i < transactionArray.length(); i++) transactionHistory.add(new BankTransactionData(transactionArray.getJSONObject(i)));
+		for(int i = 0; i < transactionArray.length(); i++) {
+			transactionHistory.add(new BankTransactionData(transactionArray.getJSONObject(i)));
+		}
 	}
 
 	@Override
@@ -73,7 +75,9 @@ public class BankingData extends SerializableData {
 		writeBuffer.writeString(playerName);
 		writeBuffer.writeDouble(storedCredits);
 		writeBuffer.writeInt(transactionHistory.size());
-		for(BankTransactionData transaction : transactionHistory) transaction.serializeNetwork(writeBuffer);
+		for(BankTransactionData transaction : transactionHistory) {
+			transaction.serializeNetwork(writeBuffer);
+		}
 	}
 
 	@Override
@@ -84,7 +88,9 @@ public class BankingData extends SerializableData {
 		storedCredits = readBuffer.readDouble();
 		int transactionCount = readBuffer.readInt();
 		transactionHistory = new HashSet<>();
-		for(int i = 0; i < transactionCount; i++) transactionHistory.add(new BankTransactionData(readBuffer));
+		for(int i = 0; i < transactionCount; i++) {
+			transactionHistory.add(new BankTransactionData(readBuffer));
+		}
 	}
 
 	public String getPlayerName() {
@@ -109,12 +115,6 @@ public class BankingData extends SerializableData {
 
 	public static class BankTransactionData extends SerializableData {
 
-		public enum TransactionType {
-			DEPOSIT,
-			WITHDRAW,
-			TRANSFER
-		}
-
 		private static final byte VERSION = 0;
 		private double amount;
 		private String fromUUID;
@@ -123,7 +123,6 @@ public class BankingData extends SerializableData {
 		private String message;
 		private long timestamp;
 		private TransactionType transactionType;
-
 		public BankTransactionData(double amount, String fromUUID, String toUUID, String subject, String message, TransactionType transactionType) {
 			super("BANK_TRANSACTION_DATA");
 			this.amount = amount;
@@ -131,7 +130,7 @@ public class BankingData extends SerializableData {
 			this.toUUID = toUUID;
 			this.subject = subject;
 			this.message = message;
-			this.timestamp = System.currentTimeMillis();
+			timestamp = System.currentTimeMillis();
 			this.transactionType = transactionType;
 		}
 
@@ -233,6 +232,12 @@ public class BankingData extends SerializableData {
 		@Override
 		public String toString() {
 			return "Transaction: " + transactionType.name() + " " + amount + " credits from " + fromUUID + " to " + toUUID + " at " + timestamp;
+		}
+
+		public enum TransactionType {
+			DEPOSIT,
+			WITHDRAW,
+			TRANSFER
 		}
 	}
 }
