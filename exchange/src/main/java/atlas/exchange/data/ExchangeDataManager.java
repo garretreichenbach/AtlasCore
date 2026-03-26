@@ -79,8 +79,9 @@ public class ExchangeDataManager extends DataManager<ExchangeData> {
 
     public boolean existsName(String name) {
         for(ExchangeData data : clientCache) {
-            if(data.getName().toLowerCase(Locale.ENGLISH).trim().equals(name.toLowerCase(Locale.ENGLISH).trim()))
+            if(data.getName().toLowerCase(Locale.ENGLISH).trim().equals(name.toLowerCase(Locale.ENGLISH).trim())) {
                 return true;
+            }
         }
         return false;
     }

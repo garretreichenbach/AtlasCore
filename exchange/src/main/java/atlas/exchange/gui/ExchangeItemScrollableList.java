@@ -9,12 +9,11 @@ import atlas.core.network.PlayerActionCommandPacket;
 import atlas.exchange.AtlasExchange;
 import atlas.exchange.data.ExchangeData;
 import atlas.exchange.data.ExchangeDataManager;
+import atlas.exchange.element.ElementRegistry;
 import org.schema.common.util.StringTools;
 import org.schema.game.client.controller.PlayerOkCancelInput;
 import org.schema.game.client.data.GameClientState;
 import org.schema.game.client.view.gui.GUIBlockSprite;
-import org.schema.game.common.data.element.ElementInformation;
-import org.schema.game.common.data.element.ElementKeyMap;
 import org.schema.game.common.data.player.BlueprintPlayerHandleRequest;
 import org.schema.game.common.data.player.catalog.CatalogPermission;
 import org.schema.game.common.data.player.inventory.Inventory;
@@ -48,19 +47,6 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 		super(state, 10, 10, pane);
 		this.pane = pane;
 		this.type = type;
-	}
-
-	// ── Columns ─────────────────────────────────────────────────────────────
-
-	/**
-	 * Looks up the Gold Bar item ID from the game's element registry by name.
-	 * Returns -1 if not found (e.g., AtlasBanking not loaded).
-	 */
-	private static short getGoldBarId() {
-		for(ElementInformation info : ElementKeyMap.getInfoArray()) {
-			if(info != null && "Gold Bar".equalsIgnoreCase(info.getName())) return info.getId();
-		}
-		return -1;
 	}
 
 	// ── Data source ──────────────────────────────────────────────────────────
@@ -352,10 +338,11 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 
 	public String canBuy(ExchangeData data) {
 		GameClientState state = (GameClientState) getState();
-		if(!state.getPlayer().getInventory().hasFreeSlot())
+		if(!state.getPlayer().getInventory().hasFreeSlot()) {
 			return "You don't have enough space in your inventory to buy this item!";
+		}
 		if(isInBuildSector(state)) return "You can't do this while in a build sector!";
-		short goldBarId = getGoldBarId();
+		short goldBarId = ElementRegistry.GOLD_BAR.getId();
 		if(type == ExchangeData.SHIPS || type == ExchangeData.STATIONS) {
 			if(!hasPermission(data)) return "Selected blueprint is not available or you don't have access to it!";
 			if(goldBarId != -1) {
@@ -383,7 +370,7 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 
 	private void buyItem(ExchangeData data) {
 		Inventory playerInventory = ((GameClientState) getState()).getPlayer().getInventory();
-		short goldBarId = getGoldBarId();
+		short goldBarId = ElementRegistry.GOLD_BAR.getId();
 		if(type == ExchangeData.WEAPONS) {
 			PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.GIVE_ITEM, GameClient.getClientPlayerState().getName(), String.valueOf(data.getItemId()), "1", "true"));
 			if(goldBarId != -1) InventoryUtils.consumeItems(playerInventory, goldBarId, data.getPrice());
@@ -400,9 +387,10 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 		req.toSaveShip = -1;
 		req.directBuy = true;
 		((GameClientState) getState()).getPlayer().getNetworkObject().catalogPlayerHandleBuffer.add(new RemoteBlueprintPlayerRequest(req, false));
-		short goldBarId = getGoldBarId();
-		if(goldBarId != -1)
+		short goldBarId = ElementRegistry.GOLD_BAR.getId();
+		if(goldBarId != -1) {
 			InventoryUtils.consumeItems(((GameClientState) getState()).getPlayer().getInventory(), goldBarId, data.getPrice());
+		}
 		if(AtlasExchange.ADD_BARS != -1) {
 			PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.ADD_BARS, GameClient.getClientPlayerState().getName(), data.getProducer(), String.valueOf(data.getPrice())));
 		}
