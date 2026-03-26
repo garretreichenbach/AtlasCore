@@ -21,6 +21,47 @@ tasks.register('prepareStarmadeCompileDependencies', Exec) {
     outputs.dir(layout.projectDirectory.dir('.ci/starmade/StarMade/lib'))
 }
 
+// ── Root tasks ───────────────────────────────────────────────────────────────
+
+/**
+ * Builds every sub-project jar and copies it to the StarMade mods directory.
+ * Equivalent to running `gradle :core:jar :banking:jar ...` in one shot.
+ *
+ * Usage:
+ *   gradle buildAll
+ *   gradle buildAll -Pstarmade_root=/path/to/starmade/
+ */
+tasks.register('buildAll') {
+    group = 'build'
+    description = 'Assembles all sub-project jars and deploys them to the StarMade mods directory.'
+    dependsOn subprojects.collect { "${it.path}:jar" }
+
+    doLast {
+        def smDir = (project.findProperty('starmade_root') ?: '').toString().trim()
+        def modsDir = smDir.isEmpty() ? null : new File(smDir + 'mods')
+
+        println ''
+        println '╔══════════════════════════════════════╗'
+        println '║       Atlas — Build Complete         ║'
+        println '╚══════════════════════════════════════╝'
+
+        subprojects.each { sub ->
+            def jarTask = sub.tasks.findByName('jar')
+            if (jarTask) {
+                println "  ✓ ${jarTask.archiveFileName.get()}"
+            }
+        }
+
+        if (modsDir) {
+            println ''
+            println "  Deployed to: ${modsDir.absolutePath}"
+        }
+        println ''
+    }
+}
+
+// ── Sub-project configuration ─────────────────────────────────────────────────
+
 subprojects {
     apply plugin: 'java'
 

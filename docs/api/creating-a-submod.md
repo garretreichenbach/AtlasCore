@@ -125,7 +125,83 @@ public void onPlayerJoinWorld(PlayerJoinWorldEvent event) {
 }
 ```
 
-## 7. Key Bindings
+## 7. AtlasGuide Integration
+
+If AtlasGuide is installed, your mod can add documents to the shared in-game guide. This is entirely optional — AtlasGuide is not required to use AtlasCore.
+
+### Dependencies
+
+Add AtlasGuide as a `compileOnly` dependency and declare it in `mod.json`:
+
+```groovy
+// build.gradle
+dependencies {
+    compileOnly files("<starmade_root>/mods/AtlasCore-1.0.0.jar")
+    compileOnly files("<starmade_root>/mods/AtlasGuide-1.0.0.jar")
+}
+```
+
+```json
+// mod.json — load AtlasCore (9999) and AtlasGuide (10000) before this mod
+{ "dependencies": [9999, 10000] }
+```
+
+### Gradle build tasks
+
+Copy the following tasks into your `build.gradle`. They sync your `.md` sources into `src/main/resources/docs/` and generate the `docs.index` manifest that `GuideManager` reads at runtime:
+
+```groovy
+def docsSourceDir = layout.projectDirectory.dir('docs/markdown')
+def docsResourceDir = layout.projectDirectory.dir('src/main/resources/docs')
+
+tasks.register('syncDocumentationResources', Sync) {
+    from(docsSourceDir)
+    into(docsResourceDir)
+    includeEmptyDirs = false
+}
+
+tasks.register('generateDocumentationIndex') {
+    dependsOn('syncDocumentationResources')
+    outputs.file(docsResourceDir.file('docs.index'))
+    doLast {
+        def dir = docsResourceDir.asFile
+        dir.mkdirs()
+        def files = fileTree(dir) { include '**/*.md' }.files.collect {
+            dir.toPath().relativize(it.toPath()).toString().replace(File.separatorChar, '/' as char)
+        }.sort()
+        docsResourceDir.file('docs.index').asFile.text =
+            files.isEmpty() ? '' : files.join(System.lineSeparator()) + System.lineSeparator()
+    }
+}
+
+tasks.named('processResources') { dependsOn('generateDocumentationIndex') }
+```
+
+Place your `.md` files in `docs/markdown/` — the first `# Heading` becomes the document's display title.
+
+### Loading documents at runtime
+
+```java
+@Override
+public void onClientCreated(ClientInitializeEvent event) {
+    // Guard so startup doesn't fail if AtlasGuide is absent
+    if (SubModRegistry.isLoaded("atlas_guide")) {
+        // Jar-bundled docs (requires docs/docs.index in your jar)
+        GuideManager.loadDocs(this);
+
+        // Optional: filesystem docs from moddata/MyMod/docs/
+        // The directory is created automatically; server admins can drop .md files there
+        File docsDir = new File(getSkeleton().getResourcesFolder(), "docs");
+        GuideManager.loadDocsFromDirectory(docsDir, this);
+    }
+}
+```
+
+`loadDocs` uses your mod's classloader to find resources in your jar. `loadDocsFromDirectory` scans a live filesystem directory recursively — no `docs.index` is required. Both methods append to the shared registry; the Guide dialog shows entries from all mods in load order.
+
+---
+
+## 8. Key Bindings
 
 ```java
 // In onClientCreated:

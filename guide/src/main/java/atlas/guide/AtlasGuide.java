@@ -55,6 +55,8 @@ public class AtlasGuide extends StarMod implements IAtlasSubMod {
 	@Override
 	public void onClientCreated(ClientInitializeEvent event) {
 		GuideManager.loadDocs(this);
+		java.io.File docsDir = new java.io.File(getSkeleton().getResourcesFolder(), "docs");
+		GuideManager.loadDocsFromDirectory(docsDir, this);
 		ControlBindingData.load(this);
 		ControlBindingData.registerBinding(this, "Open Guide", "Opens the Guide menu.", 181 /* F5 */);
 	}

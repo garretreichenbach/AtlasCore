@@ -195,8 +195,9 @@ public class BuildSectorData extends SerializableData {
 
     public static SegmentController getEntity(String entityUID) {
         for(Sendable sendable : GameCommon.getGameState().getState().getLocalAndRemoteObjectContainer().getLocalObjects().values()) {
-            if(sendable instanceof SegmentController && ((SegmentController) sendable).getUniqueIdentifier().equals(entityUID))
+            if(sendable instanceof SegmentController && ((SegmentController) sendable).getUniqueIdentifier().equals(entityUID)) {
                 return (SegmentController) sendable;
+            }
         }
         return null;
     }
@@ -277,8 +278,9 @@ public class BuildSectorData extends SerializableData {
         for(Sendable sendable : GameCommon.getGameState().getState().getLocalAndRemoteObjectContainer().getLocalObjects().values()) {
             if(sendable instanceof SegmentController) {
                 SegmentController entity = (SegmentController) sendable;
-                if(entity.getSector(new Vector3i()).equals(sector) && entity.existsInState() && getEntityData(entity) == null)
+                if(entity.getSector(new Vector3i()).equals(sector) && entity.existsInState() && getEntityData(entity) == null) {
                     addEntity(entity, entity.isOnServer());
+                }
             }
         }
     }
