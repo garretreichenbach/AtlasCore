@@ -39,6 +39,18 @@ public class BuildSectorDataManager extends DataManager<BuildSectorData> {
         }
     }
 
+    /**
+     * Sends only the build sectors this player is actually allowed to see:
+     * sectors they own or have been explicitly invited to. Overrides the base
+     * implementation which would broadcast every sector to every client.
+     */
+    @Override
+    public void sendAllDataToPlayer(org.schema.game.common.data.player.PlayerState player) {
+        for(BuildSectorData data : getAccessibleSectors(player)) {
+            sendDataToPlayer(player, data, ADD_DATA);
+        }
+    }
+
     @Override
     public Set<BuildSectorData> getServerCache() {
         List<Object> objects = PersistentObjectUtil.getObjects(AtlasCore.getInstance().getSkeleton(), BuildSectorData.class);
@@ -153,14 +165,17 @@ public class BuildSectorDataManager extends DataManager<BuildSectorData> {
         return null;
     }
 
-    public void enterBuildSector(org.schema.game.common.data.player.PlayerState player, BuildSectorData buildSectorData) {
+    public void enterBuildSector(BuildSectorData buildSectorData) {
+        // Only the sector UUID is sent — the server derives the player identity from
+        // the authenticated PlayerState, so the player name is not passed as an arg.
         PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-            AtlasBuildSectors.ENTER_BUILD_SECTOR, player.getName(), buildSectorData.getUUID()));
+            AtlasBuildSectors.ENTER_BUILD_SECTOR, buildSectorData.getUUID()));
     }
 
-    public void leaveBuildSector(org.schema.game.common.data.player.PlayerState player) {
+    public void leaveBuildSector() {
+        // No args needed; the server derives the player identity from the sender.
         PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-            AtlasBuildSectors.LEAVE_BUILD_SECTOR, player.getName()));
+            AtlasBuildSectors.LEAVE_BUILD_SECTOR));
     }
 
     /**

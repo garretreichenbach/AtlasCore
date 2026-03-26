@@ -30,6 +30,7 @@ public class BankingData extends SerializableData {
 	}
 
 	public BankingData(PacketReadBuffer readBuffer) throws IOException {
+		super("BANKING_DATA");
 		deserializeNetwork(readBuffer);
 	}
 

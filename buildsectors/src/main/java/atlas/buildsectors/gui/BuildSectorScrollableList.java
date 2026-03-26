@@ -65,9 +65,9 @@ public class BuildSectorScrollableList extends ScrollableTableList<BuildSectorDa
 					public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 						if(mouseEvent.pressedLeftMouse()) {
 							if(currentSector != null) {
-								BuildSectorDataManager.getInstance(false).leaveBuildSector(GameClient.getClientPlayerState());
+								BuildSectorDataManager.getInstance(false).leaveBuildSector();
 							}
-							BuildSectorDataManager.getInstance(false).enterBuildSector(GameClient.getClientPlayerState(), buildSectorData);
+							BuildSectorDataManager.getInstance(false).enterBuildSector(buildSectorData);
 						}
 					}
 
@@ -91,7 +91,7 @@ public class BuildSectorScrollableList extends ScrollableTableList<BuildSectorDa
 					@Override
 					public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 						if(mouseEvent.pressedLeftMouse())
-							BuildSectorDataManager.getInstance(false).leaveBuildSector(GameClient.getClientPlayerState());
+							BuildSectorDataManager.getInstance(false).leaveBuildSector();
 					}
 
 					@Override

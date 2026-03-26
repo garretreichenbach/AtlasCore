@@ -193,11 +193,12 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 	}
 
 	private void registerActionHandlers() {
-		ENTER_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
-			// args[0] = playerName, args[1] = buildSectorData UUID
-			if(args.length < 2) return;
-			String playerName = args[0];
-			String sectorUUID = args[1];
+		ENTER_BUILD_SECTOR = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only. args[0] = buildSectorData UUID.
+			// The sender's identity is taken from the authenticated PlayerState, not args.
+			if(sender == null || args.length < 1) return;
+			String playerName = sender.getName();
+			String sectorUUID = args[0];
 
 			BuildSectorData data = BuildSectorDataManager.getInstance(true).getFromUUID(sectorUUID, true);
 			if(data == null) {
@@ -205,33 +206,27 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 				return;
 			}
 
-			// Server-side permission check
+			// Server-side permission check against the authenticated sender.
 			if(!data.getOwner().equals(playerName) && data.getPermissionsForUser(playerName) == null) {
 				logWarning("[BuildSectors] ENTER: player " + playerName + " has no permission for sector " + sectorUUID);
 				return;
 			}
 
-			PlayerState player = getPlayerByName(playerName);
-			if(player == null) return;
-
 			// Save current sector so LEAVE can warp them back
-			savePlayerSector(playerName, player.getCurrentSector());
+			savePlayerSector(playerName, sender.getCurrentSector());
 
 			try {
 				Sector sector = data.getServerSector();
-				player.forcePlayerIntoEntity(sector, null);
+				sender.forcePlayerIntoEntity(sector, null);
 			} catch(Exception e) {
 				logException("[BuildSectors] ENTER: failed to teleport " + playerName, e);
 			}
 		});
 
-		LEAVE_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
-			// args[0] = playerName
-			if(args.length < 1) return;
-			String playerName = args[0];
-
-			PlayerState player = getPlayerByName(playerName);
-			if(player == null) return;
+		LEAVE_BUILD_SECTOR = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only. No args needed; identity comes from authenticated sender.
+			if(sender == null) return;
+			String playerName = sender.getName();
 
 			Vector3i savedSector = getSavedPlayerSector(playerName);
 			if(savedSector == null) {
@@ -241,21 +236,21 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 
 			try {
 				Sector sector = GameServerState.instance.getUniverse().getSector(savedSector);
-				player.forcePlayerIntoEntity(sector, null);
+				sender.forcePlayerIntoEntity(sector, null);
 				clearSavedPlayerSector(playerName);
 			} catch(Exception e) {
 				logException("[BuildSectors] LEAVE: failed to teleport " + playerName, e);
 			}
 		});
 
-		TOGGLE_AI = PlayerActionRegistry.register(args -> {
-			// args[0] = entityUID, args[1] = "true"/"false", args[2] = requestingPlayerName
-			if(args.length < 3) return;
+		TOGGLE_AI = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only. args[0] = entityUID, args[1] = "true"/"false".
+			// Permission is checked against the authenticated sender, not args.
+			if(sender == null || args.length < 2) return;
 			String entityUID = args[0];
 			boolean value = Boolean.parseBoolean(args[1]);
-			String playerName = args[2];
+			String playerName = sender.getName();
 
-			// Find the build sector that contains this entity and verify permission
 			for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
 				if(data.getPermissionForEntityOrGlobal(playerName, entityUID, BuildSectorData.PermissionTypes.TOGGLE_AI_SPECIFIC)) {
 					SegmentController entity = BuildSectorData.getEntity(entityUID);
@@ -266,12 +261,12 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 			logWarning("[BuildSectors] TOGGLE_AI: player " + playerName + " denied for entity " + entityUID);
 		});
 
-		SET_INVULNERABLE = PlayerActionRegistry.register(args -> {
-			// args[0] = entityUID, args[1] = "true"/"false", args[2] = requestingPlayerName
-			if(args.length < 3) return;
+		SET_INVULNERABLE = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only. args[0] = entityUID, args[1] = "true"/"false".
+			if(sender == null || args.length < 2) return;
 			String entityUID = args[0];
 			boolean value = Boolean.parseBoolean(args[1]);
-			String playerName = args[2];
+			String playerName = sender.getName();
 
 			for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
 				BuildSectorData.BuildSectorEntityData entityData = data.getEntityData(BuildSectorData.getEntity(entityUID));
@@ -283,11 +278,11 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 			logWarning("[BuildSectors] SET_INVULNERABLE: player " + playerName + " denied for entity " + entityUID);
 		});
 
-		DELETE_ENTITY = PlayerActionRegistry.register(args -> {
-			// args[0] = entityUID, args[1] = requestingPlayerName
-			if(args.length < 2) return;
+		DELETE_ENTITY = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only. args[0] = entityUID.
+			if(sender == null || args.length < 1) return;
 			String entityUID = args[0];
-			String playerName = args[1];
+			String playerName = sender.getName();
 
 			for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
 				if(data.getPermissionForEntityOrGlobal(playerName, entityUID, BuildSectorData.PermissionTypes.DELETE_SPECIFIC)) {

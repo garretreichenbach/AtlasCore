@@ -40,11 +40,13 @@ public class PlayerActionCommandPacket extends Packet {
 
 	@Override
 	public void processPacketOnClient() {
-		PlayerActionRegistry.process(type, args);
+		PlayerActionRegistry.process(type, args, null);
 	}
 
 	@Override
 	public void processPacketOnServer(PlayerState playerState) {
-		PlayerActionRegistry.process(type, args);
+		// Pass the authenticated PlayerState so handlers can derive the sender's
+		// identity from a trusted source rather than from spoofable args.
+		PlayerActionRegistry.process(type, args, playerState);
 	}
 }

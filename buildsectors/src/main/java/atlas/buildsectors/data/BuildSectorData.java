@@ -181,8 +181,13 @@ public class BuildSectorData extends SerializableData {
                     int permissionSize = readBuffer.readInt();
                     HashMap<PermissionTypes, Boolean> permissionMap = new HashMap<>();
                     for(int j = 0; j < permissionSize; j++) {
-                        PermissionTypes type = PermissionTypes.valueOf(readBuffer.readString());
-                        permissionMap.put(type, readBuffer.readBoolean());
+                        String typeName = readBuffer.readString();
+                        boolean value = readBuffer.readBoolean();
+                        try {
+                            permissionMap.put(PermissionTypes.valueOf(typeName.toUpperCase(Locale.ENGLISH)), value);
+                        } catch(IllegalArgumentException ignored) {
+                            // Unknown permission type — skip to stay forward-compatible.
+                        }
                     }
                     permissions.put(username, permissionMap);
                 }
@@ -599,15 +604,25 @@ public class BuildSectorData extends SerializableData {
             readBuffer.readByte(); // version
             dataUUID = readBuffer.readString();
             entityUID = readBuffer.readString();
-            entityType = EntityType.valueOf(readBuffer.readString().toUpperCase(Locale.ENGLISH));
+            String entityTypeName = readBuffer.readString().toUpperCase(Locale.ENGLISH);
+            try {
+                entityType = EntityType.valueOf(entityTypeName);
+            } catch(IllegalArgumentException e) {
+                entityType = EntityType.SHIP; // safe fallback
+            }
             int permissionCount = readBuffer.readInt();
             for(int i = 0; i < permissionCount; i++) {
                 String name = readBuffer.readString();
                 int permissionSize = readBuffer.readInt();
                 HashMap<PermissionTypes, Boolean> permissionMap = new HashMap<>();
                 for(int j = 0; j < permissionSize; j++) {
-                    PermissionTypes type = PermissionTypes.valueOf(readBuffer.readString().toUpperCase(Locale.ENGLISH));
-                    permissionMap.put(type, readBuffer.readBoolean());
+                    String typeName = readBuffer.readString().toUpperCase(Locale.ENGLISH);
+                    boolean value = readBuffer.readBoolean();
+                    try {
+                        permissionMap.put(PermissionTypes.valueOf(typeName), value);
+                    } catch(IllegalArgumentException ignored) {
+                        // Unknown permission type — skip to stay forward-compatible.
+                    }
                 }
                 permissions.put(name, permissionMap);
             }

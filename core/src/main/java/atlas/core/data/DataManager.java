@@ -119,7 +119,7 @@ public abstract class DataManager<E extends SerializableData> {
 			case UPDATE_DATA:
 				return "UPDATE_DATA";
 			default:
-				throw new IllegalArgumentException("Invalid type: " + type + ". Must be one of ADD_DATA, REMOVE_DATA, or UPDATE_DATA.");
+				return "UNKNOWN(" + type + ")";
 		}
 	}
 

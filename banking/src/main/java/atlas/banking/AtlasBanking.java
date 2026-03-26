@@ -84,11 +84,20 @@ public class AtlasBanking extends StarMod implements IAtlasSubMod {
 	public void onAtlasCoreReady() {
 		registerBankingDataType();
 
-		SET_CREDITS = PlayerActionRegistry.register(args -> {
-			if(args.length >= 2) {
-				String playerName = args[0];
+		SET_CREDITS = PlayerActionRegistry.register((args, sender) -> {
+			// Server-only, admin-only action.
+			if(sender == null) return;
+			if(!sender.isAdmin()) {
+				logWarning("[Banking] SET_CREDITS: non-admin player " + sender.getName() + " attempted to set credits.");
+				return;
+			}
+			if(args.length < 2) return;
+			String playerName = args[0];
+			try {
 				double amount = Double.parseDouble(args[1]);
 				BankingDataManager.getInstance(true).setPlayerCredits(playerName, amount, true);
+			} catch(NumberFormatException e) {
+				logWarning("[Banking] SET_CREDITS: invalid amount value '" + args[1] + "' from " + sender.getName());
 			}
 		});
 	}

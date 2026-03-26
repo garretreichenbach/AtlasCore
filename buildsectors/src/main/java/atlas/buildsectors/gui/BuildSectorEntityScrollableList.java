@@ -146,7 +146,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 				if(mouseEvent.pressedLeftMouse()) {
 					PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-						AtlasBuildSectors.ENTER_BUILD_SECTOR, user, buildSectorData.getUUID()));
+						AtlasBuildSectors.ENTER_BUILD_SECTOR, buildSectorData.getUUID()));
 				}
 			}
 
@@ -201,7 +201,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
 						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-							AtlasBuildSectors.TOGGLE_AI, entityData.getEntityUID(), "false", user));
+							AtlasBuildSectors.TOGGLE_AI, entityData.getEntityUID(), "false"));
 						clear();
 					}
 				}
@@ -226,7 +226,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
 						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-							AtlasBuildSectors.TOGGLE_AI, entityData.getEntityUID(), "true", user));
+							AtlasBuildSectors.TOGGLE_AI, entityData.getEntityUID(), "true"));
 						clear();
 					}
 				}
@@ -252,7 +252,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 			public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 				if(mouseEvent.pressedLeftMouse()) {
 					PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-						AtlasBuildSectors.DELETE_ENTITY, entityData.getEntityUID(), user));
+						AtlasBuildSectors.DELETE_ENTITY, entityData.getEntityUID()));
 					clear();
 				}
 			}
@@ -279,7 +279,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 					// Turrets are docked children — deleting the root entity on the server
 					// will also remove all docked objects (EntityUtils.delete handles recursion).
 					PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-						AtlasBuildSectors.DELETE_ENTITY, entityData.getEntityUID(), user));
+						AtlasBuildSectors.DELETE_ENTITY, entityData.getEntityUID()));
 					clear();
 				}
 			}
@@ -305,7 +305,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
 						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-							AtlasBuildSectors.SET_INVULNERABLE, entityData.getEntityUID(), "false", user));
+							AtlasBuildSectors.SET_INVULNERABLE, entityData.getEntityUID(), "false"));
 					}
 				}
 
@@ -329,7 +329,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
 						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
-							AtlasBuildSectors.SET_INVULNERABLE, entityData.getEntityUID(), "true", user));
+							AtlasBuildSectors.SET_INVULNERABLE, entityData.getEntityUID(), "true"));
 					}
 				}
 
