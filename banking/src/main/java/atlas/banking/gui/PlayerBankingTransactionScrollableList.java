@@ -35,28 +35,15 @@ public class PlayerBankingTransactionScrollableList extends ScrollableTableList<
 
 	@Override
 	public void initColumns() {
-		addColumn("Subject", 10.0f, new Comparator<BankingData.BankTransactionData>() {
-			@Override
-			public int compare(BankingData.BankTransactionData o1, BankingData.BankTransactionData o2) {
-				return o1.getSubject().compareTo(o2.getSubject());
-			}
+		addColumn("Subject", 10.0f, Comparator.comparing(BankingData.BankTransactionData::getSubject));
+		addColumn("From", 7.0f, (o1, o2) -> {
+			BankingData from1 = BankingDataManager.getInstance(false).getFromUUID(o1.getFromUUID(), false);
+			BankingData from2 = BankingDataManager.getInstance(false).getFromUUID(o2.getFromUUID(), false);
+			String fromName1 = from1 != null ? from1.getPlayerName() : o1.getFromUUID();
+			String fromName2 = from2 != null ? from2.getPlayerName() : o2.getFromUUID();
+			return fromName1.compareTo(fromName2);
 		});
-		addColumn("From", 7.0f, new Comparator<BankingData.BankTransactionData>() {
-			@Override
-			public int compare(BankingData.BankTransactionData o1, BankingData.BankTransactionData o2) {
-				BankingData from1 = BankingDataManager.getInstance(false).getFromUUID(o1.getFromUUID(), false);
-				BankingData from2 = BankingDataManager.getInstance(false).getFromUUID(o2.getFromUUID(), false);
-				String fromName1 = from1 != null ? from1.getPlayerName() : o1.getFromUUID();
-				String fromName2 = from2 != null ? from2.getPlayerName() : o2.getFromUUID();
-				return fromName1.compareTo(fromName2);
-			}
-		});
-		addColumn("Time", 7.0f, new Comparator<BankingData.BankTransactionData>() {
-			@Override
-			public int compare(BankingData.BankTransactionData o1, BankingData.BankTransactionData o2) {
-				return Long.compare(o1.getTimestamp(), o2.getTimestamp());
-			}
-		});
+		addColumn("Time", 7.0f, Comparator.comparingLong(BankingData.BankTransactionData::getTimestamp));
 		activeSortColumnIndex = 2;
 	}
 

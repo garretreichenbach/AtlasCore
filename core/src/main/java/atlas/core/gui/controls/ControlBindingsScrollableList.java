@@ -14,7 +14,6 @@ import org.schema.schine.input.InputState;
 import org.schema.schine.input.Keyboard;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Locale;
 import java.util.Set;
 
@@ -39,27 +38,14 @@ public class ControlBindingsScrollableList extends ScrollableTableList<ControlBi
 
 	@Override
 	public void initColumns() {
-		addColumn(Lng.str("Name"), 3.0f, new Comparator<ControlBindingData>() {
-			@Override
-			public int compare(ControlBindingData o1, ControlBindingData o2) {
-				return o1.getName().compareToIgnoreCase(o2.getName());
-			}
-		});
-		addColumn(Lng.str("Description"), 7.0f, new Comparator<ControlBindingData>() {
-			@Override
-			public int compare(ControlBindingData o1, ControlBindingData o2) {
-				return o1.getDescription().compareToIgnoreCase(o2.getDescription());
-			}
-		});
-		addColumn(Lng.str("Setting"), 3.0f, new Comparator<ControlBindingData>() {
-			@Override
-			public int compare(ControlBindingData o1, ControlBindingData o2) {
-				// Compare the binding values
-				if(o1.getBinding() == o2.getBinding()) return 0;
-				else if(o1.getBinding() <= 0) return 1; // o1 is not bound
-				else if(o2.getBinding() <= 0) return -1; // o2 is not bound
-				return Integer.compare(o1.getBinding(), o2.getBinding());
-			}
+		addColumn(Lng.str("Name"), 3.0f, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
+		addColumn(Lng.str("Description"), 7.0f, (o1, o2) -> o1.getDescription().compareToIgnoreCase(o2.getDescription()));
+		addColumn(Lng.str("Setting"), 3.0f, (o1, o2) -> {
+			// Compare the binding values
+			if(o1.getBinding() == o2.getBinding()) return 0;
+			else if(o1.getBinding() <= 0) return 1; // o1 is not bound
+			else if(o2.getBinding() <= 0) return -1; // o2 is not bound
+			return Integer.compare(o1.getBinding(), o2.getBinding());
 		});
 		addTextFilter(new GUIListFilterText<ControlBindingData>() {
 			@Override
@@ -73,7 +59,7 @@ public class ControlBindingsScrollableList extends ScrollableTableList<ControlBi
 	public void updateListEntries(GUIElementList guiElementList, Set<ControlBindingData> set) {
 		guiElementList.deleteObservers();
 		guiElementList.addObserver(this);
-		for(final ControlBindingData binding : set) {
+		for(ControlBindingData binding : set) {
 			GUIClippedRow nameText = getSimpleRow(binding.getName(), this);
 			GUIClippedRow descriptionText = getSimpleRow(binding.getDescription(), this);
 			GUIHorizontalButton settingButton = new GUIHorizontalButton(getState(), GUIHorizontalArea.HButtonType.BUTTON_RED_MEDIUM, new Object() {
