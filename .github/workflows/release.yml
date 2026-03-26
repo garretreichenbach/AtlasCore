@@ -1,0 +1,143 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag to create/use for this release (e.g. v1.2.0)"
+        required: true
+        type: string
+      release_name:
+        description: "Release title (optional — defaults to tag name)"
+        required: false
+        type: string
+      starmade_build_url:
+        description: "Optional direct StarMade build zip URL override"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Temurin JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: gradle
+
+      - name: Prepare StarMade compile dependencies
+        id: starmade
+        env:
+          STARMADE_DEV_BASE_URL: http://files-origin.star-made.org/build/dev/
+          STARMADE_BUILD_URL: ${{ inputs.starmade_build_url }}
+          STARMADE_DOWNLOAD_PATTERN: ^starmade-build_[0-9]{8}_[0-9]{6}\.zip$
+        run: bash .github/scripts/prepare_starmade.sh
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ inputs.tag_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sync version from tag
+        env:
+          TAG_NAME: ${{ steps.tag.outputs.value }}
+        run: |
+          version="${TAG_NAME#v}"
+          if [[ -z "$version" ]]; then
+            echo "Resolved version is empty from tag '${TAG_NAME}'" >&2
+            exit 1
+          fi
+          sed -i -E "s/^mod_version=.*/mod_version=${version}/" gradle.properties
+          echo "Synced mod_version to ${version}"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.14"
+
+      - name: Build all sub-project jars
+        run: gradle clean jar -Pstarmade_root="${{ steps.starmade.outputs.starmade_root }}"
+
+      - name: Collect artifacts
+        id: collect
+        env:
+          STARMADE_ROOT: ${{ steps.starmade.outputs.starmade_root }}
+        run: |
+          mkdir -p dist
+          mods_dir="${STARMADE_ROOT%/}/mods"
+
+          jar_count=0
+          while IFS= read -r jar; do
+            cp "$jar" dist/
+            sha256sum "dist/$(basename "$jar")" > "dist/$(basename "$jar").sha256"
+            jar_count=$((jar_count + 1))
+          done < <(find "$mods_dir" -maxdepth 1 -name "Atlas*.jar" | sort)
+
+          if [[ "$jar_count" -eq 0 ]]; then
+            echo "No Atlas*.jar files found in ${mods_dir}" >&2
+            ls -la "$mods_dir" >&2
+            exit 1
+          fi
+
+          echo "Collected ${jar_count} jar(s):"
+          ls -1 dist/*.jar
+          echo "jar_count=${jar_count}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release title
+        id: title
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" && -n "${{ inputs.release_name }}" ]]; then
+            echo "value=${{ inputs.release_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ steps.tag.outputs.value }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create tag on workflow_dispatch if missing
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TAG_NAME: ${{ steps.tag.outputs.value }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
+            echo "Tag ${TAG_NAME} already exists"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "${TAG_NAME}"
+            git push origin "${TAG_NAME}"
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          name: ${{ steps.title.outputs.value }}
+          body: |
+            Automated release — ${{ steps.collect.outputs.jar_count }} mod jar(s) attached.
+
+            **Modules:** AtlasCore · AtlasBanking · AtlasBuildSectors · AtlasExchange · AtlasGuide
+
+            **Build info:**
+            - Java: Temurin 8
+            - Gradle task: `clean jar`
+            - StarMade dependency: ${{ steps.starmade.outputs.download_url }}
+          files: |
+            dist/*.jar
+            dist/*.sha256
