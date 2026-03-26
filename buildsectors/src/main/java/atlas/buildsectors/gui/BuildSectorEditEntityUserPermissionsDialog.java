@@ -54,8 +54,7 @@ public class BuildSectorEditEntityUserPermissionsDialog extends PlayerInput {
             super.onInit();
             GUIContentPane contentPane = ((GUIDialogWindow) background).getMainContentPane();
             contentPane.setTextBoxHeightLast((int) (getHeight() - 50));
-            BuildSectorPermissionsScrollableList permissionsScrollableList =
-                    new BuildSectorPermissionsScrollableList(getState(), contentPane.getContent(0), username, buildSectorData, entityUID);
+            BuildSectorPermissionsScrollableList permissionsScrollableList = new BuildSectorPermissionsScrollableList(getState(), contentPane.getContent(0), username, buildSectorData, entityUID);
             permissionsScrollableList.onInit();
             contentPane.getContent(0).attach(permissionsScrollableList);
         }

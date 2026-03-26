@@ -17,6 +17,7 @@ import org.schema.schine.graphicsengine.forms.font.FontLibrary;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.*;
 import org.schema.schine.input.InputState;
+import org.spongepowered.asm.mixin.Overwrite;
 
 /**
  * [Description]
@@ -50,7 +51,7 @@ public class BankingDialog extends PlayerInput {
 	public static class BankingPanel extends GUIInputPanel {
 
 		private GUITextOverlay storedCreditsText;
-		private BankingData bankingData;
+		private final BankingData bankingData;
 
 		public BankingPanel(InputState state, GUICallback guiCallback) {
 			super("BankingPanel", state, 800, 500, guiCallback, "", "");
@@ -65,7 +66,12 @@ public class BankingDialog extends PlayerInput {
 			storedCreditsText = new GUITextOverlay(10, 10, getState());
 			storedCreditsText.setFont(FontLibrary.FontSize.MEDIUM.getFont());
 			storedCreditsText.onInit();
-			storedCreditsText.setTextSimple("Stored Credits: " + bankingData.getStoredCredits());
+			storedCreditsText.setTextSimple(new Object() {
+				@Override
+				public String toString() {
+					return "Stored Credits: " + bankingData.getStoredCredits();
+				}
+			});
 			contentPane.getContent(0).attach(storedCreditsText);
 
 			GUIHorizontalButtonTablePane buttonPane = new GUIHorizontalButtonTablePane(getState(), 3, 1, contentPane.getContent(0));
@@ -361,12 +367,6 @@ public class BankingDialog extends PlayerInput {
 			PlayerBankingTransactionScrollableList transactionList = new PlayerBankingTransactionScrollableList(getState(), contentPane.getContent(1), bankingData);
 			transactionList.onInit();
 			contentPane.getContent(1).attach(transactionList);
-		}
-
-		@Override
-		public void draw() {
-			super.draw();
-			storedCreditsText.setTextSimple("Stored Credits: " + bankingData.getStoredCredits());
 		}
 	}
 }

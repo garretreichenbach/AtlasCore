@@ -18,43 +18,46 @@ import org.schema.schine.input.InputState;
  */
 public class BuildSectorEditUserPermissionsDialog extends PlayerInput {
 
-    private final BuildSectorEditUserPermissionsPanel panel;
+	private final BuildSectorEditUserPermissionsPanel panel;
 
-    public BuildSectorEditUserPermissionsDialog(String username, BuildSectorData buildSectorData) {
-        super(GameClient.getClientState());
-        (panel = new BuildSectorEditUserPermissionsPanel(getState(), this, username, buildSectorData)).onInit();
-    }
+	public BuildSectorEditUserPermissionsDialog(String username, BuildSectorData buildSectorData) {
+		super(GameClient.getClientState());
+		(panel = new BuildSectorEditUserPermissionsPanel(getState(), this, username, buildSectorData)).onInit();
+	}
 
-    @Override
-    public void onDeactivate() { panel.cleanUp(); }
+	@Override
+	public void onDeactivate() {
+		panel.cleanUp();
+	}
 
-    @Override
-    public void handleMouseEvent(MouseEvent mouseEvent) {}
+	@Override
+	public void handleMouseEvent(MouseEvent mouseEvent) {
+	}
 
-    @Override
-    public BuildSectorEditUserPermissionsPanel getInputPanel() { return panel; }
+	@Override
+	public BuildSectorEditUserPermissionsPanel getInputPanel() {
+		return panel;
+	}
 
-    public static class BuildSectorEditUserPermissionsPanel extends GUIInputPanel {
+	public static class BuildSectorEditUserPermissionsPanel extends GUIInputPanel {
 
-        private final BuildSectorData buildSectorData;
-        private final String username;
+		private final BuildSectorData buildSectorData;
+		private final String username;
 
-        public BuildSectorEditUserPermissionsPanel(InputState state, GUICallback guiCallback,
-                                                   String username, BuildSectorData buildSectorData) {
-            super("BuildSectorEditUserPermissionsPanel", state, guiCallback, Lng.str("Edit Permissions"), "");
-            this.username = username;
-            this.buildSectorData = buildSectorData;
-        }
+		public BuildSectorEditUserPermissionsPanel(InputState state, GUICallback guiCallback, String username, BuildSectorData buildSectorData) {
+			super("BuildSectorEditUserPermissionsPanel", state, guiCallback, Lng.str("Edit Permissions"), "");
+			this.username = username;
+			this.buildSectorData = buildSectorData;
+		}
 
-        @Override
-        public void onInit() {
-            super.onInit();
-            GUIContentPane contentPane = ((GUIDialogWindow) background).getMainContentPane();
-            contentPane.setTextBoxHeightLast((int) (getHeight() - 50));
-            BuildSectorPermissionsScrollableList permissionsList =
-                    new BuildSectorPermissionsScrollableList(getState(), contentPane.getContent(0), username, buildSectorData);
-            permissionsList.onInit();
-            contentPane.getContent(0).attach(permissionsList);
-        }
-    }
+		@Override
+		public void onInit() {
+			super.onInit();
+			GUIContentPane contentPane = ((GUIDialogWindow) background).getMainContentPane();
+			contentPane.setTextBoxHeightLast((int) (getHeight() - 50));
+			BuildSectorPermissionsScrollableList permissionsList = new BuildSectorPermissionsScrollableList(getState(), contentPane.getContent(0), username, buildSectorData);
+			permissionsList.onInit();
+			contentPane.getContent(0).attach(permissionsList);
+		}
+	}
 }
