@@ -31,7 +31,7 @@ jobs:
         id: starmade
         env:
           STARMADE_DEV_BASE_URL: http://files-origin.star-made.org/build/dev/
-          STARMADE_BUILD_URL: ${{ inputs.starmade_build_url }}
+          STARMADE_BUILD_URL: ${{ inputs.starmade_build_url || 'http://files-origin.star-made.org/build/dev/starmade-build_20260319_094639.zip' }}
           STARMADE_DOWNLOAD_PATTERN: ^starmade-build_[0-9]{8}_[0-9]{6}\.zip$
         run: bash .github/scripts/prepare_starmade.sh
 

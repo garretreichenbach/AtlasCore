@@ -71,11 +71,23 @@ resolve_download_url() {
 
   # Scan the raw HTML for matching filenames — works regardless of href format,
   # query parameters, or whether the server returns relative or absolute URLs.
+  local raw_html
+  raw_html="$(curl_fetch "$BASE_URL" 2>/dev/null || true)"
+  echo "[prepare_starmade] Directory listing fetch: ${#raw_html} bytes from $BASE_URL" >&2
+  if [[ -z "$raw_html" ]]; then
+    echo "[prepare_starmade] curl returned empty body (server may be returning an error or blocking CI)" >&2
+  else
+    echo "[prepare_starmade] First 500 chars of listing:" >&2
+    printf '%s' "$raw_html" | head -c 500 >&2
+    echo >&2
+  fi
+
   local latest_file
-  latest_file="$(curl_fetch "$BASE_URL" \
+  latest_file="$(printf '%s' "$raw_html" \
     | grep -oE "$filename_pat" \
     | sort -uV \
     | tail -n 1 || true)"
+  echo "[prepare_starmade] Matched filename: '${latest_file}'" >&2
 
   if [[ -n "$latest_file" ]]; then
     join_url "$BASE_URL" "$latest_file"
