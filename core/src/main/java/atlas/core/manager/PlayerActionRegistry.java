@@ -28,41 +28,44 @@ import java.util.Map;
  */
 public final class PlayerActionRegistry {
 
-    public interface ActionHandler {
-        /**
-         * @param args   Packet arguments (client-supplied; do not trust for identity).
-         * @param sender The authenticated sending player, or {@code null} when
-         *               executing on the client side.
-         */
-        void process(String[] args, PlayerState sender);
-    }
+	private static final Map<Integer, ActionHandler> handlers = new HashMap<>();
+	private static int nextId;
 
-    private static final Map<Integer, ActionHandler> handlers = new HashMap<>();
-    private static int nextId = 0;
+	private PlayerActionRegistry() {
+	}
 
-    private PlayerActionRegistry() {}
+	/**
+	 * Registers an action handler and returns the integer type ID that should be
+	 * stored as a constant and passed to {@code PlayerActionCommandPacket}.
+	 */
+	public static int register(ActionHandler handler) {
+		int id = nextId;
+		nextId++;
+		handlers.put(id, handler);
+		return id;
+	}
 
-    /**
-     * Registers an action handler and returns the integer type ID that should be
-     * stored as a constant and passed to {@code PlayerActionCommandPacket}.
-     */
-    public static int register(ActionHandler handler) {
-        int id = nextId++;
-        handlers.put(id, handler);
-        return id;
-    }
+	/**
+	 * Dispatches an action. Called by {@code PlayerActionCommandPacket}.
+	 *
+	 * @param sender {@code null} on the client, non-null on the server.
+	 */
+	public static void process(int type, String[] args, PlayerState sender) {
+		ActionHandler handler = handlers.get(type);
+		if(handler != null) {
+			handler.process(args, sender);
+		} else {
+			AtlasCore.getInstance().logWarning("No handler registered for action type " + type);
+		}
+	}
 
-    /**
-     * Dispatches an action. Called by {@code PlayerActionCommandPacket}.
-     *
-     * @param sender {@code null} on the client, non-null on the server.
-     */
-    public static void process(int type, String[] args, PlayerState sender) {
-        ActionHandler handler = handlers.get(type);
-        if(handler != null) {
-            handler.process(args, sender);
-        } else {
-            AtlasCore.getInstance().logWarning("No handler registered for action type " + type);
-        }
-    }
+	@FunctionalInterface
+	public interface ActionHandler {
+		/**
+		 * @param args   Packet arguments (client-supplied; do not trust for identity).
+		 * @param sender The authenticated sending player, or {@code null} when
+		 *               executing on the client side.
+		 */
+		void process(String[] args, PlayerState sender);
+	}
 }
