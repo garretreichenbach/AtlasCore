@@ -50,6 +50,9 @@ subprojects {
     dependencies {
         compileOnly(files(starmadeJar))
         compileOnly(fileTree(dir: starmadeLibDir, include: "*.jar"))
+        // JUnit 4 — used for in-game mod tests registered via onRegisterTests().
+        // Available on StarMade's runtime classpath; compileOnly here avoids bundling it.
+        compileOnly 'junit:junit:4.13.2'
     }
 
     tasks.withType(JavaCompile).configureEach {

@@ -10,6 +10,8 @@ import atlas.core.data.misc.ControlBindingData;
 import atlas.core.manager.PlayerActionRegistry;
 import atlas.core.network.PlayerActionCommandPacket;
 import atlas.guide.commands.GuideCommand;
+import atlas.guide.tests.GuideManagerTest;
+import org.schema.game.server.test.TestRegistry;
 import atlas.guide.gui.GuideDialog;
 import atlas.guide.manager.GuideManager;
 import org.schema.game.client.view.gui.newgui.GUITopBar;
@@ -59,6 +61,11 @@ public class AtlasGuide extends StarMod implements IAtlasSubMod {
 
 	@Override
 	public void onBlockConfigLoad(BlockConfig config) {}
+
+	@Override
+	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
+		registrar.register(GuideManagerTest.class);
+	}
 
 	// ── IAtlasSubMod ─────────────────────────────────────────────────────────
 

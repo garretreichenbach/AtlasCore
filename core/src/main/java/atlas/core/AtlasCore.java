@@ -16,6 +16,9 @@ import atlas.core.data.player.PlayerData;
 import atlas.core.data.player.PlayerDataManager;
 import atlas.core.element.ElementRegistry;
 import atlas.core.network.PlayerActionCommandPacket;
+import atlas.core.tests.DataTypeRegistryTest;
+import atlas.core.tests.PlayerActionRegistryTest;
+import org.schema.game.server.test.TestRegistry;
 import atlas.core.network.SendDataPacket;
 import atlas.core.network.SyncRequestPacket;
 import atlas.core.manager.ConfigManager;
@@ -45,7 +48,12 @@ public class AtlasCore extends StarMod {
 	}
 
 	@Override
-	public void onDisable() {
+	public void onDisable() {}
+
+	@Override
+	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
+		registrar.register(PlayerActionRegistryTest.class);
+		registrar.register(DataTypeRegistryTest.class);
 	}
 
 	@Override

@@ -8,6 +8,8 @@ import api.mod.StarMod;
 import atlas.banking.data.BankingData;
 import atlas.banking.data.BankingDataManager;
 import atlas.banking.gui.BankingDialog;
+import atlas.banking.tests.BankingDataTest;
+import org.schema.game.server.test.TestRegistry;
 import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
 import atlas.core.data.DataTypeRegistry;
@@ -62,6 +64,11 @@ public class AtlasBanking extends StarMod implements IAtlasSubMod {
 
 	@Override
 	public void onBlockConfigLoad(BlockConfig config) {}
+
+	@Override
+	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
+		registrar.register(BankingDataTest.class);
+	}
 
 	@Override
 	public String getModId() {

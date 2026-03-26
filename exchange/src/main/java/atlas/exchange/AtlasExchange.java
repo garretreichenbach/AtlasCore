@@ -13,6 +13,8 @@ import atlas.exchange.data.ExchangeData;
 import atlas.exchange.data.ExchangeDataManager;
 import atlas.exchange.element.ElementRegistry;
 import atlas.exchange.gui.ExchangeDialog;
+import atlas.exchange.tests.ExchangeDataTest;
+import org.schema.game.server.test.TestRegistry;
 import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.GUIActivationHighlightCallback;
@@ -61,6 +63,11 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	@Override
 	public void onBlockConfigLoad(BlockConfig config) {
 		ElementRegistry.registerElements();
+	}
+
+	@Override
+	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
+		registrar.register(ExchangeDataTest.class);
 	}
 
 	// ── IAtlasSubMod ─────────────────────────────────────────────────────────
