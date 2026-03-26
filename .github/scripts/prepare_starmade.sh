@@ -59,72 +59,26 @@ join_url() {
   printf '%s%s\n' "$base" "$tail"
 }
 
-extract_links() {
-  # Extract href values; handle both double and single-quoted attributes.
-  sed -nE 's/.*href="([^"]+)".*/\1/p
-           s/.*href='"'"'([^'"'"']+)'"'"'.*/\1/p'
-}
-
-discover_zip_links() {
-  local url="$1"
-  # Strip query parameters, then match the zip filename at the end of the link.
-  # Using (^|/) instead of ^ lets this work for both relative hrefs and
-  # absolute URLs that some Apache versions return.
-  local filename_pat
-  filename_pat="$(printf '%s' "$DOWNLOAD_PATTERN" | sed 's/^\^//; s/\$$//')"
-  curl_fetch "$url" \
-    | extract_links \
-    | sed -E 's/\?[^"]*$//' \
-    | grep -E "(^|/)${filename_pat}$"
-}
-
-choose_newest_url() {
-  awk -F'/' '
-    {
-      file=$NF
-      print file "\t" $0
-    }
-  ' | sort -V | tail -n 1 | cut -f2-
-}
-
 resolve_download_url() {
   if [[ -n "$DIRECT_URL" ]]; then
     printf '%s\n' "$DIRECT_URL"
     return
   fi
 
-  local candidates=""
-  local root_links
-  root_links="$(discover_zip_links "$BASE_URL" || true)"
-  if [[ -n "$root_links" ]]; then
-    while IFS= read -r link; do
-      [[ -z "$link" ]] && continue
-      candidates+="$(join_url "$BASE_URL" "$link")"$'\n'
-    done <<< "$root_links"
-  fi
+  # Strip anchors from DOWNLOAD_PATTERN so grep -oE can extract just the filename.
+  local filename_pat
+  filename_pat="$(printf '%s' "$DOWNLOAD_PATTERN" | sed 's/^\^//; s/\$$//')"
 
-  local subdirs
-  subdirs="$(curl_fetch "$BASE_URL" | extract_links | grep -E '/$' | grep -Ev '^\.\.?/$' | sed 's#/$##' | sort -V || true)"
-  if [[ -n "$subdirs" ]]; then
-    while IFS= read -r subdir; do
-      [[ -z "$subdir" ]] && continue
-      local subdir_url
-      subdir_url="$(join_url "$BASE_URL" "$subdir/")"
-      local sub_links
-      sub_links="$(discover_zip_links "$subdir_url" || true)"
-      if [[ -n "$sub_links" ]]; then
-        while IFS= read -r link; do
-          [[ -z "$link" ]] && continue
-          candidates+="$(join_url "$subdir_url" "$link")"$'\n'
-        done <<< "$sub_links"
-      fi
-    done <<< "$subdirs"
-  fi
+  # Scan the raw HTML for matching filenames — works regardless of href format,
+  # query parameters, or whether the server returns relative or absolute URLs.
+  local latest_file
+  latest_file="$(curl_fetch "$BASE_URL" \
+    | grep -oE "$filename_pat" \
+    | sort -uV \
+    | tail -n 1 || true)"
 
-  local newest
-  newest="$(printf '%s' "$candidates" | sed '/^$/d' | choose_newest_url || true)"
-  if [[ -n "$newest" ]]; then
-    printf '%s\n' "$newest"
+  if [[ -n "$latest_file" ]]; then
+    join_url "$BASE_URL" "$latest_file"
     return
   fi
 
