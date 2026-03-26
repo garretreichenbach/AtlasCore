@@ -8,21 +8,24 @@ import api.listener.events.player.PlayerJoinWorldEvent;
 import api.listener.events.player.PlayerSpawnEvent;
 import api.mod.StarLoader;
 import api.mod.StarMod;
+import api.network.PacketReadBuffer;
 import atlas.buildsectors.data.BuildSectorData;
 import atlas.buildsectors.data.BuildSectorDataManager;
 import atlas.buildsectors.drawer.BuildSectorHudDrawer;
 import atlas.buildsectors.gui.BuildSectorDialog;
 import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
+import atlas.core.data.DataManager;
 import atlas.core.data.DataTypeRegistry;
+import atlas.core.data.SerializableData;
 import atlas.core.manager.PlayerActionRegistry;
 import atlas.core.utils.EntityUtils;
 import org.schema.common.util.linAlg.Vector3i;
+import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.game.common.controller.SegmentController;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.common.data.world.Sector;
 import org.schema.game.server.data.GameServerState;
-import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.GUIActivationHighlightCallback;
 import org.schema.schine.graphicsengine.forms.gui.GUICallback;
@@ -38,272 +41,289 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 
-    /** Distance from origin at which build sectors are placed. */
-    public static final int BUILD_SECTOR_DISTANCE = 1_000_000;
+	/**
+	 * Distance from origin at which build sectors are placed.
+	 */
+	public static final int BUILD_SECTOR_DISTANCE = 1000000;
 
-    public static int ENTER_BUILD_SECTOR;
-    public static int LEAVE_BUILD_SECTOR;
-    public static int TOGGLE_AI;
-    public static int SET_INVULNERABLE;
-    public static int DELETE_ENTITY;
+	public static int ENTER_BUILD_SECTOR;
+	public static int LEAVE_BUILD_SECTOR;
+	public static int TOGGLE_AI;
+	public static int SET_INVULNERABLE;
+	public static int DELETE_ENTITY;
 
-    private static AtlasBuildSectors instance;
+	private static AtlasBuildSectors instance;
 
-    /**
-     * Remembers the sector each player was in before entering a build sector, so
-     * LEAVE_BUILD_SECTOR can warp them back. Session-only; lost on server restart.
-     */
-    private final Map<String, Vector3i> savedPlayerSectors = new ConcurrentHashMap<>();
+	/**
+	 * Remembers the sector each player was in before entering a build sector, so
+	 * LEAVE_BUILD_SECTOR can warp them back. Session-only; lost on server restart.
+	 */
+	private final Map<String, Vector3i> savedPlayerSectors = new ConcurrentHashMap<>();
 
-    public AtlasBuildSectors() {
-        instance = this;
-    }
+	public AtlasBuildSectors() {
+		instance = this;
+	}
 
-    public static AtlasBuildSectors getInstance() {
-        return instance;
-    }
+	public static AtlasBuildSectors getInstance() {
+		return instance;
+	}
 
-    // ── sector save/restore helpers ──────────────────────────────────────────
+	// ── sector save/restore helpers ──────────────────────────────────────────
 
-    public void savePlayerSector(String playerName, Vector3i sector) {
-        savedPlayerSectors.put(playerName, new Vector3i(sector));
-    }
+	private static void openBuildSector() {
+		api.utils.textures.StarLoaderTexture.runOnGraphicsThread(() -> new BuildSectorDialog().activate());
+	}
 
-    public Vector3i getSavedPlayerSector(String playerName) {
-        return savedPlayerSectors.get(playerName);
-    }
+	/**
+	 * Returns the online PlayerState for the given name, or null if not found.
+	 */
+	private static PlayerState getPlayerByName(String name) {
+		try {
+			for(PlayerState ps : GameServerState.instance.getPlayerStatesByName().values()) {
+				if(ps.getName().equals(name)) return ps;
+			}
+		} catch(Exception e) {
+			instance.logException("getPlayerByName failed for " + name, e);
+		}
+		return null;
+	}
 
-    public void clearSavedPlayerSector(String playerName) {
-        savedPlayerSectors.remove(playerName);
-    }
+	public void savePlayerSector(String playerName, Vector3i sector) {
+		savedPlayerSectors.put(playerName, new Vector3i(sector));
+	}
 
-    // ── StarMod lifecycle ────────────────────────────────────────────────────
+	// ── StarMod lifecycle ────────────────────────────────────────────────────
 
-    @Override
-    public void onEnable() {
-        SubModRegistry.register(this);
-    }
+	public Vector3i getSavedPlayerSector(String playerName) {
+		return savedPlayerSectors.get(playerName);
+	}
 
-    @Override
-    public void onDisable() {}
+	public void clearSavedPlayerSector(String playerName) {
+		savedPlayerSectors.remove(playerName);
+	}
 
-    @Override
-    public void onClientCreated(ClientInitializeEvent event) {
-        StarLoader.registerListener(RegisterWorldDrawersEvent.class, new Listener<RegisterWorldDrawersEvent>() {
-            @Override
-            public void onEvent(RegisterWorldDrawersEvent e) {
-                e.getModDrawables().add(new BuildSectorHudDrawer());
-            }
-        }, this);
-    }
+	@Override
+	public void onEnable() {
+		SubModRegistry.register(this);
+	}
 
-    @Override
-    public void onBlockConfigLoad(BlockConfig config) {}
+	@Override
+	public void onDisable() {
+	}
 
-    // ── IAtlasSubMod ─────────────────────────────────────────────────────────
+	// ── IAtlasSubMod ─────────────────────────────────────────────────────────
 
-    @Override
-    public String getModId() {
-        return "atlas_buildsectors";
-    }
+	@Override
+	public void onClientCreated(ClientInitializeEvent event) {
+		StarLoader.registerListener(RegisterWorldDrawersEvent.class, new Listener<RegisterWorldDrawersEvent>() {
+			@Override
+			public void onEvent(RegisterWorldDrawersEvent e) {
+				e.getModDrawables().add(new BuildSectorHudDrawer());
+			}
+		}, this);
+	}
 
-    @Override
-    public StarMod getMod() {
-        return this;
-    }
+	@Override
+	public void onBlockConfigLoad(BlockConfig config) {
+	}
 
-    @Override
-    public void onAtlasCoreReady() {
-        registerBuildSectorDataType();
-        registerActionHandlers();
-    }
+	@Override
+	public String getModId() {
+		return "atlas_buildsectors";
+	}
 
-    @Override
-    public void registerTopBarButtons(GUITopBar.ExpandedButton playerDropdown) {
-        playerDropdown.addExpandedButton("BUILD SECTOR", new GUICallback() {
-            @Override
-            public void callback(GUIElement e, MouseEvent event) {
-                if(event.pressedLeftMouse()) openBuildSector();
-            }
-            @Override
-            public boolean isOccluded() { return false; }
-        }, new GUIActivationHighlightCallback() {
-            @Override public boolean isHighlighted(InputState s) { return false; }
-            @Override public boolean isVisible(InputState s) { return true; }
-            @Override public boolean isActive(InputState s) { return true; }
-        });
-    }
+	@Override
+	public StarMod getMod() {
+		return this;
+	}
 
-    @Override
-    public void onPlayerSpawn(PlayerSpawnEvent event) {
-        if(event.getPlayer().isOnServer()) {
-            BuildSectorDataManager.getInstance(true).sendAllDataToPlayer(event.getPlayer().getOwnerState());
-        }
-    }
+	@Override
+	public void onAtlasCoreReady() {
+		registerBuildSectorDataType();
+		registerActionHandlers();
+	}
 
-    @Override
-    public void onPlayerJoinWorld(PlayerJoinWorldEvent event) {
-        BuildSectorDataManager.getInstance(true).createMissingData(event.getPlayerState().getName());
-    }
+	@Override
+	public void registerTopBarButtons(GUITopBar.ExpandedButton playerDropdown) {
+		playerDropdown.addExpandedButton("BUILD SECTOR", new GUICallback() {
+			@Override
+			public void callback(GUIElement e, MouseEvent event) {
+				if(event.pressedLeftMouse()) openBuildSector();
+			}
 
-    @Override
-    public void onKeyPress(String bindingName) {
-        if("Open Build Sector Menu".equals(bindingName)) openBuildSector();
-    }
+			@Override
+			public boolean isOccluded() {
+				return false;
+			}
+		}, new GUIActivationHighlightCallback() {
+			@Override
+			public boolean isHighlighted(InputState s) {
+				return false;
+			}
 
-    // ── private helpers ───────────────────────────────────────────────────────
+			@Override
+			public boolean isVisible(InputState s) {
+				return true;
+			}
 
-    private static void openBuildSector() {
-        api.utils.textures.StarLoaderTexture.runOnGraphicsThread(() -> new BuildSectorDialog().activate());
-    }
+			@Override
+			public boolean isActive(InputState s) {
+				return true;
+			}
+		});
+	}
 
-    private void registerActionHandlers() {
+	@Override
+	public void onPlayerSpawn(PlayerSpawnEvent event) {
+		if(event.getPlayer().isOnServer()) {
+			BuildSectorDataManager.getInstance(true).sendAllDataToPlayer(event.getPlayer().getOwnerState());
+		}
+	}
 
-        ENTER_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
-            // args[0] = playerName, args[1] = buildSectorData UUID
-            if(args.length < 2) return;
-            String playerName = args[0];
-            String sectorUUID = args[1];
+	// ── private helpers ───────────────────────────────────────────────────────
 
-            BuildSectorData data = BuildSectorDataManager.getInstance(true).getFromUUID(sectorUUID, true);
-            if(data == null) {
-                logWarning("[BuildSectors] ENTER: no sector found for UUID " + sectorUUID);
-                return;
-            }
+	@Override
+	public void onPlayerJoinWorld(PlayerJoinWorldEvent event) {
+		BuildSectorDataManager.getInstance(true).createMissingData(event.getPlayerState().getName());
+	}
 
-            // Server-side permission check
-            if(!data.getOwner().equals(playerName) && data.getPermissionsForUser(playerName) == null) {
-                logWarning("[BuildSectors] ENTER: player " + playerName + " has no permission for sector " + sectorUUID);
-                return;
-            }
+	@Override
+	public void onKeyPress(String bindingName) {
+		if("Open Build Sector Menu".equals(bindingName)) openBuildSector();
+	}
 
-            PlayerState player = getPlayerByName(playerName);
-            if(player == null) return;
+	private void registerActionHandlers() {
+		ENTER_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
+			// args[0] = playerName, args[1] = buildSectorData UUID
+			if(args.length < 2) return;
+			String playerName = args[0];
+			String sectorUUID = args[1];
 
-            // Save current sector so LEAVE can warp them back
-            savePlayerSector(playerName, player.getCurrentSector());
+			BuildSectorData data = BuildSectorDataManager.getInstance(true).getFromUUID(sectorUUID, true);
+			if(data == null) {
+				logWarning("[BuildSectors] ENTER: no sector found for UUID " + sectorUUID);
+				return;
+			}
 
-            try {
-                Sector sector = data.getServerSector();
-                player.forcePlayerIntoEntity(sector, null);
-            } catch(Exception e) {
-                logException("[BuildSectors] ENTER: failed to teleport " + playerName, e);
-            }
-        });
+			// Server-side permission check
+			if(!data.getOwner().equals(playerName) && data.getPermissionsForUser(playerName) == null) {
+				logWarning("[BuildSectors] ENTER: player " + playerName + " has no permission for sector " + sectorUUID);
+				return;
+			}
 
-        LEAVE_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
-            // args[0] = playerName
-            if(args.length < 1) return;
-            String playerName = args[0];
+			PlayerState player = getPlayerByName(playerName);
+			if(player == null) return;
 
-            PlayerState player = getPlayerByName(playerName);
-            if(player == null) return;
+			// Save current sector so LEAVE can warp them back
+			savePlayerSector(playerName, player.getCurrentSector());
 
-            Vector3i savedSector = getSavedPlayerSector(playerName);
-            if(savedSector == null) {
-                // No saved sector — warp to server spawn sector (0,2,0 in most configs) or origin
-                savedSector = new Vector3i(0, 2, 0);
-            }
+			try {
+				Sector sector = data.getServerSector();
+				player.forcePlayerIntoEntity(sector, null);
+			} catch(Exception e) {
+				logException("[BuildSectors] ENTER: failed to teleport " + playerName, e);
+			}
+		});
 
-            try {
-                Sector sector = GameServerState.instance.getUniverse().getSector(savedSector);
-                player.forcePlayerIntoEntity(sector, null);
-                clearSavedPlayerSector(playerName);
-            } catch(Exception e) {
-                logException("[BuildSectors] LEAVE: failed to teleport " + playerName, e);
-            }
-        });
+		LEAVE_BUILD_SECTOR = PlayerActionRegistry.register(args -> {
+			// args[0] = playerName
+			if(args.length < 1) return;
+			String playerName = args[0];
 
-        TOGGLE_AI = PlayerActionRegistry.register(args -> {
-            // args[0] = entityUID, args[1] = "true"/"false", args[2] = requestingPlayerName
-            if(args.length < 3) return;
-            String entityUID = args[0];
-            boolean value = Boolean.parseBoolean(args[1]);
-            String playerName = args[2];
+			PlayerState player = getPlayerByName(playerName);
+			if(player == null) return;
 
-            // Find the build sector that contains this entity and verify permission
-            for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
-                if(data.getPermissionForEntityOrGlobal(playerName, entityUID,
-                    BuildSectorData.PermissionTypes.TOGGLE_AI_SPECIFIC)) {
-                    SegmentController entity = BuildSectorData.getEntity(entityUID);
-                    if(entity != null) EntityUtils.toggleAI(entity, value);
-                    return;
-                }
-            }
-            logWarning("[BuildSectors] TOGGLE_AI: player " + playerName + " denied for entity " + entityUID);
-        });
+			Vector3i savedSector = getSavedPlayerSector(playerName);
+			if(savedSector == null) {
+				// No saved sector — warp to server spawn sector (0,2,0 in most configs) or origin
+				savedSector = new Vector3i(0, 2, 0);
+			}
 
-        SET_INVULNERABLE = PlayerActionRegistry.register(args -> {
-            // args[0] = entityUID, args[1] = "true"/"false", args[2] = requestingPlayerName
-            if(args.length < 3) return;
-            String entityUID = args[0];
-            boolean value = Boolean.parseBoolean(args[1]);
-            String playerName = args[2];
+			try {
+				Sector sector = GameServerState.instance.getUniverse().getSector(savedSector);
+				player.forcePlayerIntoEntity(sector, null);
+				clearSavedPlayerSector(playerName);
+			} catch(Exception e) {
+				logException("[BuildSectors] LEAVE: failed to teleport " + playerName, e);
+			}
+		});
 
-            for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
-                BuildSectorData.BuildSectorEntityData entityData =
-                    data.getEntityData(BuildSectorData.getEntity(entityUID));
-                if(entityData != null && data.getPermissionForEntityOrGlobal(playerName, entityUID,
-                    BuildSectorData.PermissionTypes.TOGGLE_DAMAGE_SPECIFIC)) {
-                    entityData.setInvulnerable(value, true);
-                    return;
-                }
-            }
-            logWarning("[BuildSectors] SET_INVULNERABLE: player " + playerName + " denied for entity " + entityUID);
-        });
+		TOGGLE_AI = PlayerActionRegistry.register(args -> {
+			// args[0] = entityUID, args[1] = "true"/"false", args[2] = requestingPlayerName
+			if(args.length < 3) return;
+			String entityUID = args[0];
+			boolean value = Boolean.parseBoolean(args[1]);
+			String playerName = args[2];
 
-        DELETE_ENTITY = PlayerActionRegistry.register(args -> {
-            // args[0] = entityUID, args[1] = requestingPlayerName
-            if(args.length < 2) return;
-            String entityUID = args[0];
-            String playerName = args[1];
+			// Find the build sector that contains this entity and verify permission
+			for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
+				if(data.getPermissionForEntityOrGlobal(playerName, entityUID, BuildSectorData.PermissionTypes.TOGGLE_AI_SPECIFIC)) {
+					SegmentController entity = BuildSectorData.getEntity(entityUID);
+					if(entity != null) EntityUtils.toggleAI(entity, value);
+					return;
+				}
+			}
+			logWarning("[BuildSectors] TOGGLE_AI: player " + playerName + " denied for entity " + entityUID);
+		});
 
-            for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
-                if(data.getPermissionForEntityOrGlobal(playerName, entityUID,
-                    BuildSectorData.PermissionTypes.DELETE_SPECIFIC)) {
-                    SegmentController entity = BuildSectorData.getEntity(entityUID);
-                    if(entity != null) {
-                        data.removeEntity(entity, true);
-                        EntityUtils.delete(entity);
-                    }
-                    return;
-                }
-            }
-            logWarning("[BuildSectors] DELETE_ENTITY: player " + playerName + " denied for entity " + entityUID);
-        });
-    }
+		SET_INVULNERABLE = PlayerActionRegistry.register(args -> {
+			// args[0] = entityUID, args[1] = "true"/"false", args[2] = requestingPlayerName
+			if(args.length < 3) return;
+			String entityUID = args[0];
+			boolean value = Boolean.parseBoolean(args[1]);
+			String playerName = args[2];
 
-    private void registerBuildSectorDataType() {
-        DataTypeRegistry.register(new DataTypeRegistry.Entry() {
-            @Override
-            public String getName() { return "BUILD_SECTOR_DATA"; }
+			for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
+				BuildSectorData.BuildSectorEntityData entityData = data.getEntityData(BuildSectorData.getEntity(entityUID));
+				if(entityData != null && data.getPermissionForEntityOrGlobal(playerName, entityUID, BuildSectorData.PermissionTypes.TOGGLE_DAMAGE_SPECIFIC)) {
+					entityData.setInvulnerable(value, true);
+					return;
+				}
+			}
+			logWarning("[BuildSectors] SET_INVULNERABLE: player " + playerName + " denied for entity " + entityUID);
+		});
 
-            @Override
-            public atlas.core.data.SerializableData deserializeNetwork(api.network.PacketReadBuffer buf) throws java.io.IOException {
-                return new BuildSectorData(buf);
-            }
+		DELETE_ENTITY = PlayerActionRegistry.register(args -> {
+			// args[0] = entityUID, args[1] = requestingPlayerName
+			if(args.length < 2) return;
+			String entityUID = args[0];
+			String playerName = args[1];
 
-            @Override
-            public atlas.core.data.SerializableData deserializeJSON(org.json.JSONObject obj) {
-                return new BuildSectorData(obj);
-            }
+			for(BuildSectorData data : BuildSectorDataManager.getInstance(true).getServerCache()) {
+				if(data.getPermissionForEntityOrGlobal(playerName, entityUID, BuildSectorData.PermissionTypes.DELETE_SPECIFIC)) {
+					SegmentController entity = BuildSectorData.getEntity(entityUID);
+					if(entity != null) {
+						data.removeEntity(entity, true);
+						EntityUtils.delete(entity);
+					}
+					return;
+				}
+			}
+			logWarning("[BuildSectors] DELETE_ENTITY: player " + playerName + " denied for entity " + entityUID);
+		});
+	}
 
-            @Override
-            public atlas.core.data.DataManager<?> getManager(boolean server) {
-                return BuildSectorDataManager.getInstance(server);
-            }
-        });
-    }
+	private void registerBuildSectorDataType() {
+		DataTypeRegistry.register(new DataTypeRegistry.Entry() {
+			@Override
+			public String getName() {
+				return "BUILD_SECTOR_DATA";
+			}
 
-    /** Returns the online PlayerState for the given name, or null if not found. */
-    private static PlayerState getPlayerByName(String name) {
-        try {
-            for(PlayerState ps : GameServerState.instance.getPlayerStatesByName().values()) {
-                if(ps.getName().equals(name)) return ps;
-            }
-        } catch(Exception e) {
-            AtlasBuildSectors.getInstance().logException("getPlayerByName failed for " + name, e);
-        }
-        return null;
-    }
+			@Override
+			public SerializableData deserializeNetwork(PacketReadBuffer buf) throws java.io.IOException {
+				return new BuildSectorData(buf);
+			}
+
+			@Override
+			public SerializableData deserializeJSON(org.json.JSONObject obj) {
+				return new BuildSectorData(obj);
+			}
+
+			@Override
+			public DataManager<?> getManager(boolean server) {
+				return BuildSectorDataManager.getInstance(server);
+			}
+		});
+	}
 }
