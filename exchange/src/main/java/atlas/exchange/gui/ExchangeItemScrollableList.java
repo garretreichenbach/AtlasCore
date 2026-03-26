@@ -14,10 +14,7 @@ import org.schema.common.util.StringTools;
 import org.schema.game.client.controller.PlayerOkCancelInput;
 import org.schema.game.client.data.GameClientState;
 import org.schema.game.client.view.gui.GUIBlockSprite;
-import org.schema.game.common.data.player.BlueprintPlayerHandleRequest;
 import org.schema.game.common.data.player.catalog.CatalogPermission;
-import org.schema.game.common.data.player.inventory.Inventory;
-import org.schema.game.network.objects.remote.RemoteBlueprintPlayerRequest;
 import org.schema.game.server.data.blueprintnw.BlueprintClassification;
 import org.schema.schine.common.language.Lng;
 import org.schema.schine.graphicsengine.core.MouseEvent;
@@ -251,8 +248,13 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 	}
 
 	private GUIHorizontalButtonTablePane redrawButtonPane(ExchangeData data, GUIAncor anchor) {
-		boolean isOwner = GameClient.getClientPlayerState().getName().equals(data.getProducer()) && (type == ExchangeData.SHIPS || type == ExchangeData.STATIONS);
-		GUIHorizontalButtonTablePane buttonPane = new GUIHorizontalButtonTablePane(getState(), 1, 1, anchor);
+		boolean isBlueprint = type == ExchangeData.SHIPS || type == ExchangeData.STATIONS;
+		boolean isOwner = GameClient.getClientPlayerState().getName().equals(data.getProducer()) && isBlueprint;
+		// Ships get BUY + BUY AS DESIGN. Stations/items/weapons get BUY only
+		// (stations cannot be loaded into a shipyard).
+		boolean canBuyAsDesign = !isOwner && !GameClient.getClientPlayerState().isAdmin() && type == ExchangeData.SHIPS;
+		int cols = canBuyAsDesign ? 2 : 1;
+		GUIHorizontalButtonTablePane buttonPane = new GUIHorizontalButtonTablePane(getState(), cols, 1, anchor);
 		buttonPane.onInit();
 		if(isOwner || GameClient.getClientPlayerState().isAdmin()) {
 			buttonPane.addButton(0, 0, Lng.str("REMOVE"), GUIHorizontalArea.HButtonColor.RED, new GUICallback() {
@@ -281,16 +283,97 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 				}
 			}, new GUIActivationCallback() {
 				@Override
-				public boolean isVisible(InputState inputState) {
+				public boolean isVisible(InputState s) {
 					return true;
 				}
 
 				@Override
-				public boolean isActive(InputState inputState) {
+				public boolean isActive(InputState s) {
 					return true;
 				}
 			});
+		} else if(isBlueprint) {
+			// ── BUY (empty BlueprintMetaItem) ────────────────────────────────
+			buttonPane.addButton(0, 0, Lng.str("BUY AS BLUEPRINT"), GUIHorizontalArea.HButtonColor.GREEN, new GUICallback() {
+				@Override
+				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
+					if(mouseEvent.pressedLeftMouse()) {
+						(new PlayerOkCancelInput("Confirm", getState(), Lng.str("Confirm"), Lng.str("Buy this blueprint? You will receive an empty blueprint item and must gather the required materials yourself.")) {
+							@Override
+							public void onDeactivate() {
+							}
+
+							@Override
+							public void pressedOK() {
+								String error = canBuy(data);
+								if(error != null) {
+									((GameClientState) getState()).getController().popupAlertTextMessage(error);
+								} else {
+									buyBlueprint(data);
+								}
+								deactivate();
+							}
+						}).activate();
+					}
+				}
+
+				@Override
+				public boolean isOccluded() {
+					return false;
+				}
+			}, new GUIActivationCallback() {
+				@Override
+				public boolean isVisible(InputState s) {
+					return true;
+				}
+
+				@Override
+				public boolean isActive(InputState s) {
+					return true;
+				}
+			});
+			// ── BUY AS DESIGN (VirtualBlueprintMetaItem for shipyard, ships only) ──
+			if(canBuyAsDesign)
+				buttonPane.addButton(1, 0, Lng.str("BUY AS DESIGN"), GUIHorizontalArea.HButtonColor.GREEN, new GUICallback() {
+					@Override
+					public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
+						if(mouseEvent.pressedLeftMouse()) {
+							(new PlayerOkCancelInput("Confirm", getState(), Lng.str("Confirm"), Lng.str("Buy this blueprint as a shipyard design? You will receive a design item you can load into your shipyard.")) {
+								@Override
+								public void onDeactivate() {
+								}
+
+								@Override
+								public void pressedOK() {
+									String error = canBuy(data);
+									if(error != null) {
+										((GameClientState) getState()).getController().popupAlertTextMessage(error);
+									} else {
+										buyBlueprintAsDesign(data);
+									}
+									deactivate();
+								}
+							}).activate();
+						}
+					}
+
+					@Override
+					public boolean isOccluded() {
+						return false;
+					}
+				}, new GUIActivationCallback() {
+					@Override
+					public boolean isVisible(InputState s) {
+						return true;
+					}
+
+					@Override
+					public boolean isActive(InputState s) {
+						return true;
+					}
+				});
 		} else {
+			// ── BUY (items / weapons) ────────────────────────────────────────
 			buttonPane.addButton(0, 0, Lng.str("BUY"), GUIHorizontalArea.HButtonColor.GREEN, new GUICallback() {
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
@@ -306,8 +389,7 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 								if(error != null) {
 									((GameClientState) getState()).getController().popupAlertTextMessage(error);
 								} else {
-									if(type == ExchangeData.SHIPS || type == ExchangeData.STATIONS) buyBlueprint(data);
-									else if(type == ExchangeData.ITEMS || type == ExchangeData.WEAPONS) buyItem(data);
+									buyItem(data);
 								}
 								deactivate();
 							}
@@ -321,12 +403,12 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 				}
 			}, new GUIActivationCallback() {
 				@Override
-				public boolean isVisible(InputState inputState) {
+				public boolean isVisible(InputState s) {
 					return true;
 				}
 
 				@Override
-				public boolean isActive(InputState inputState) {
+				public boolean isActive(InputState s) {
 					return true;
 				}
 			});
@@ -360,8 +442,9 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 
 	private boolean hasPermission(ExchangeData data) {
 		for(CatalogPermission permission : ((GameClientState) getState()).getCatalog().getAvailableCatalog()) {
-			if(permission.getUid().toLowerCase(Locale.ENGLISH).equals(data.getCatalogName().toLowerCase(Locale.ENGLISH)) && permission.others())
+			if(permission.getUid().toLowerCase(Locale.ENGLISH).equals(data.getCatalogName().toLowerCase(Locale.ENGLISH)) && permission.others()) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -369,31 +452,22 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 	// ── Utility ──────────────────────────────────────────────────────────────
 
 	private void buyItem(ExchangeData data) {
-		Inventory playerInventory = ((GameClientState) getState()).getPlayer().getInventory();
-		short goldBarId = ElementRegistry.GOLD_BAR.getId();
-		if(type == ExchangeData.WEAPONS) {
-			PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.GIVE_ITEM, GameClient.getClientPlayerState().getName(), String.valueOf(data.getItemId()), "1", "true"));
-			if(goldBarId != -1) InventoryUtils.consumeItems(playerInventory, goldBarId, data.getPrice());
-		} else {
-			PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.GIVE_ITEM, GameClient.getClientPlayerState().getName(), String.valueOf(data.getItemId()), String.valueOf(data.getItemCount()), "false"));
-		}
+		int count = (type == ExchangeData.WEAPONS) ? 1 : data.getItemCount();
+		PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.GIVE_ITEM, String.valueOf(data.getItemId()), String.valueOf(count), String.valueOf(type == ExchangeData.WEAPONS)));
 	}
 
+	/**
+	 * Sends a server-side request to give the buyer an empty {@code BlueprintMetaItem}.
+	 */
 	private void buyBlueprint(ExchangeData data) {
-		BlueprintPlayerHandleRequest req = new BlueprintPlayerHandleRequest();
-		req.catalogName = data.getCatalogName();
-		req.entitySpawnName = "";
-		req.save = false;
-		req.toSaveShip = -1;
-		req.directBuy = true;
-		((GameClientState) getState()).getPlayer().getNetworkObject().catalogPlayerHandleBuffer.add(new RemoteBlueprintPlayerRequest(req, false));
-		short goldBarId = ElementRegistry.GOLD_BAR.getId();
-		if(goldBarId != -1) {
-			InventoryUtils.consumeItems(((GameClientState) getState()).getPlayer().getInventory(), goldBarId, data.getPrice());
-		}
-		if(AtlasExchange.ADD_BARS != -1) {
-			PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.ADD_BARS, GameClient.getClientPlayerState().getName(), data.getProducer(), String.valueOf(data.getPrice())));
-		}
+		PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.BUY_BLUEPRINT, data.getCatalogName(), data.getProducer()));
+	}
+
+	/**
+	 * Sends a server-side request to give the buyer a shipyard design item.
+	 */
+	private void buyBlueprintAsDesign(ExchangeData data) {
+		PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.BUY_DESIGN, data.getCatalogName(), data.getProducer()));
 	}
 
 	// ── Row class ────────────────────────────────────────────────────────────

@@ -3,12 +3,12 @@ package atlas.core.data.player;
 import api.common.GameCommon;
 import api.network.PacketReadBuffer;
 import api.network.PacketWriteBuffer;
+import atlas.core.data.SerializableData;
 import com.bulletphysics.linearmath.Transform;
 import org.json.JSONObject;
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.common.data.player.faction.Faction;
-import atlas.core.data.SerializableData;
 
 import java.io.IOException;
 
@@ -25,6 +25,7 @@ public class PlayerData extends SerializableData {
 	private int factionId;
 	private Vector3i lastRealSector = new Vector3i();
 	private Transform lastRealTransform = new Transform();
+	private int pendingExchangeCredits;
 
 	public PlayerData(String name, int factionId, Vector3i lastRealSector, Transform lastRealTransform) {
 		super("PLAYER_DATA");
@@ -67,6 +68,7 @@ public class PlayerData extends SerializableData {
 		lastRealTransformOrigin.put("z", lastRealTransform.origin.z);
 		lastRealTransformData.put("origin", lastRealTransformOrigin);
 		data.put("lastRealTransform", lastRealTransformData);
+		data.put("pendingExchangeCredits", pendingExchangeCredits);
 		return data;
 	}
 
@@ -82,6 +84,7 @@ public class PlayerData extends SerializableData {
 		JSONObject lastRealTransformOrigin = lastRealTransformData.getJSONObject("origin");
 		lastRealTransform.setIdentity();
 		lastRealTransform.origin.set((float) lastRealTransformOrigin.getDouble("x"), (float) lastRealTransformOrigin.getDouble("y"), (float) lastRealTransformOrigin.getDouble("z"));
+		pendingExchangeCredits = data.optInt("pendingExchangeCredits", 0);
 	}
 
 	@Override
@@ -157,5 +160,19 @@ public class PlayerData extends SerializableData {
 	public void setLastRealTransform(Transform transform) {
 		lastRealTransform.set(transform);
 		PlayerDataManager.getInstance(getPlayerState().isOnServer()).updateData(this, getPlayerState().isOnServer());
+	}
+
+	/**
+	 * Gold Bars owed from Exchange sales. Persisted to disk; not sent over the network.
+	 */
+	public int getPendingExchangeCredits() {
+		return pendingExchangeCredits;
+	}
+
+	/**
+	 * Sets pending Exchange credits without auto-saving; caller must call {@code updateData} explicitly.
+	 */
+	public void setPendingExchangeCredits(int amount) {
+		pendingExchangeCredits = amount;
 	}
 }

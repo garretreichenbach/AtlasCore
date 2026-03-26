@@ -10,9 +10,11 @@ Player-driven blueprint and item marketplace for the Atlas mod suite. Producers 
 - Four listing categories: **Ships**, **Stations**, **Weapons**, **Items**
 - Producers list their blueprints or items with a name, description, price, and classification
 - Buyers spend **Gold Bars** (custom items registered by this module) to purchase listings
-- Blueprint purchases use `RemoteBlueprintPlayerRequest` — the blueprint spawns directly at the buyer
+- Blueprint purchases are handled server-side via `BUY_BLUEPRINT` / `BUY_DESIGN` actions — buyers receive an empty
+  `BlueprintMetaItem` (manual construction) or a shipyard design item; no ship is ever spawned pre-filled
+- **"Buy as Design"** button gives buyers a shipyard design item they can load directly into a shipyard
+- All Gold Bar deduction and seller crediting is authoritative on the server, preventing client-side tampering
 - Item purchases dispatch a `GIVE_ITEM` server action
-- Gold bar sales revenue is credited back to the producer via the `ADD_BARS` server action
 - Full-text and category filtering in the exchange dialog
 - Add-listing dialog with catalog picker, block-type picker, and weapon-subtype picker
 

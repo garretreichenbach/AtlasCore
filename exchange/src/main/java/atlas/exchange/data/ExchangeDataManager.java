@@ -85,4 +85,14 @@ public class ExchangeDataManager extends DataManager<ExchangeData> {
         }
         return false;
     }
+
+    /**
+     * Finds the first listing whose catalog UID matches. Called server-side.
+     */
+    public ExchangeData findByCatalogName(String catalogName) {
+        for(ExchangeData data : getServerCache()) {
+            if(catalogName.equalsIgnoreCase(data.getCatalogName())) return data;
+        }
+        return null;
+    }
 }
