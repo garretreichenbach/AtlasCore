@@ -60,14 +60,22 @@ join_url() {
 }
 
 extract_links() {
-  sed -nE 's/.*href="([^"]+)".*/\1/p'
+  # Extract href values; handle both double and single-quoted attributes.
+  sed -nE 's/.*href="([^"]+)".*/\1/p
+           s/.*href='"'"'([^'"'"']+)'"'"'.*/\1/p'
 }
 
 discover_zip_links() {
   local url="$1"
+  # Strip query parameters, then match the zip filename at the end of the link.
+  # Using (^|/) instead of ^ lets this work for both relative hrefs and
+  # absolute URLs that some Apache versions return.
+  local filename_pat
+  filename_pat="$(printf '%s' "$DOWNLOAD_PATTERN" | sed 's/^\^//; s/\$$//')"
   curl_fetch "$url" \
     | extract_links \
-    | grep -E "$DOWNLOAD_PATTERN"
+    | sed -E 's/\?[^"]*$//' \
+    | grep -E "(^|/)${filename_pat}$"
 }
 
 choose_newest_url() {
