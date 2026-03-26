@@ -571,6 +571,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Adding Guide Documents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jar-bundled-developer-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jar-bundled (developer workflow)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filesystem-server-admin-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filesystem (server admin workflow)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -592,6 +620,56 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#third-party-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Third-party integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Third-party integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bundle-docs-in-your-jar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bundle docs in your jar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-at-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load at startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -868,9 +946,33 @@
 <li>Markdown documents rendered natively with StarMade's GUI (no external libraries)</li>
 <li>Scrollable two-panel layout: document list on the left, rich content on the right</li>
 <li>In-game <code>/guide</code> command and keybind (<code>GUIDE</code> top-bar button)</li>
-<li>Documents loaded from the mod jar at startup — no filesystem writes required</li>
+<li>Documents loaded from two sources: jar-bundled (developers) and live filesystem (server admins)</li>
+<li>Filesystem directory created automatically on first startup</li>
 </ul>
 <h2 id="adding-guide-documents">Adding Guide Documents</h2>
+<p>AtlasGuide loads from two sources in order, both additive:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Path</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jar-bundled</td>
+<td><code>docs/</code> inside the mod jar</td>
+<td>Packaged at build time via Gradle</td>
+</tr>
+<tr>
+<td>Filesystem</td>
+<td><code>moddata/AtlasGuide/docs/</code></td>
+<td>Editable at runtime; no build step</td>
+</tr>
+</tbody>
+</table>
+<h3 id="jar-bundled-developer-workflow">Jar-bundled (developer workflow)</h3>
 <p>Place <code>.md</code> files in <code>guide/docs/markdown/</code>. At build time, Gradle syncs them to <code>src/main/resources/docs/</code> and generates <code>docs.index</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>guide/
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  docs/markdown/
@@ -878,6 +980,15 @@
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    server-rules.md
 </code></pre></div>
 <p>The first <code># Heading</code> in each file becomes the document's title in the list.</p>
+<h3 id="filesystem-server-admin-workflow">Filesystem (server admin workflow)</h3>
+<p>Drop any <code>.md</code> file into <code>moddata/AtlasGuide/docs/</code> (subdirectories are included). The folder is created automatically on first startup. No Gradle tasks or jar rebuild needed — restart the client to pick up changes.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>StarMade/
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  moddata/
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    AtlasGuide/
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>      docs/
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        server-rules.md     ← add, edit, or delete freely
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        custom-guide.md
+</code></pre></div>
 <h2 id="markdown-support">Markdown Support</h2>
 <table>
 <thead>
@@ -942,6 +1053,36 @@
 </tr>
 </tbody>
 </table>
+<h2 id="third-party-integration">Third-party integration</h2>
+<p>Any mod can contribute documents to the shared guide dialog. The registry is <strong>additive</strong> — each <code>GuideManager.loadDocs(mod)</code> call appends that mod's documents without clearing earlier entries.</p>
+<h3 id="dependencies">Dependencies</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// build.gradle</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">dependencies</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">compileOnly</span><span class="w"> </span><span class="n">files</span><span class="o">(</span><span class="s2">&quot;&lt;starmade_root&gt;/mods/AtlasCore-1.0.0.jar&quot;</span><span class="o">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="n">compileOnly</span><span class="w"> </span><span class="n">files</span><span class="o">(</span><span class="s2">&quot;&lt;starmade_root&gt;/mods/AtlasGuide-1.0.0.jar&quot;</span><span class="o">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="o">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// mod.json</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;dependencies&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">9999</span><span class="p">,</span><span class="w"> </span><span class="mi">10000</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h3 id="bundle-docs-in-your-jar">Bundle docs in your jar</h3>
+<p>Copy the <code>syncDocumentationResources</code> and <code>generateDocumentationIndex</code> Gradle tasks from <code>guide/build.gradle</code> into your own build script. Place your <code>.md</code> files in <code>docs/markdown/</code> — they are automatically packaged and indexed at build time.</p>
+<h3 id="load-at-startup">Load at startup</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@Override</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onClientCreated</span><span class="p">(</span><span class="n">ClientInitializeEvent</span><span class="w"> </span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="c1">// Jar-bundled docs — uses this mod&#39;s own classloader</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">GuideManager</span><span class="p">.</span><span class="na">loadDocs</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="c1">// Optional: also expose a moddata folder so server admins can add docs without recompiling</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="n">File</span><span class="w"> </span><span class="n">docsDir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="n">getSkeleton</span><span class="p">().</span><span class="na">getResourcesFolder</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;docs&quot;</span><span class="p">);</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="n">GuideManager</span><span class="p">.</span><span class="na">loadDocsFromDirectory</span><span class="p">(</span><span class="n">docsDir</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">);</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>loadDocs</code> uses the calling mod's classloader, finding resources in your jar. <code>loadDocsFromDirectory</code> scans any live filesystem path recursively — the directory is created automatically if absent, giving server operators an immediate place to put files.</p>
+<blockquote>
+<p><strong>Avoid title collisions.</strong> If two mods register a document with the same <code># Heading</code>, the later-loaded document wins. Prefix headings with your mod name (e.g. <code># MyMod — Installation</code>) to stay unique.</p>
+</blockquote>
+<p>See <a href="../../api/creating-a-submod/#atlasguide-integration">Creating a Sub-Mod — AtlasGuide Integration</a> for a complete walkthrough.</p>
 
 
 

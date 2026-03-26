@@ -791,10 +791,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-key-bindings" class="md-nav__link">
+  <a href="#7-atlasguide-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Key Bindings
+        7. AtlasGuide Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. AtlasGuide Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gradle-build-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gradle build tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loading-documents-at-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading documents at runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-key-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Key Bindings
       
     </span>
   </a>
@@ -998,16 +1048,74 @@
 <a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="n">MyDataManager</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="kc">true</span><span class="p">).</span><span class="na">createMissingData</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="na">getPlayerState</span><span class="p">().</span><span class="na">getName</span><span class="p">());</span>
 <a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">}</span>
 </code></pre></div>
-<h2 id="7-key-bindings">7. Key Bindings</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">// In onClientCreated:</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">ControlBindingData</span><span class="p">.</span><span class="na">load</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">ControlBindingData</span><span class="p">.</span><span class="na">registerBinding</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Open My Menu&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Opens my menu.&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">77</span><span class="w"> </span><span class="cm">/* M */</span><span class="p">);</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1">// In onKeyPress:</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nd">@Override</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onKeyPress</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">bindingName</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;Open My Menu&quot;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">bindingName</span><span class="p">))</span><span class="w"> </span><span class="n">openMyMenu</span><span class="p">();</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">}</span>
+<h2 id="7-atlasguide-integration">7. AtlasGuide Integration</h2>
+<p>If AtlasGuide is installed, your mod can add documents to the shared in-game guide. This is entirely optional — AtlasGuide is not required to use AtlasCore.</p>
+<h3 id="dependencies">Dependencies</h3>
+<p>Add AtlasGuide as a <code>compileOnly</code> dependency and declare it in <code>mod.json</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">// build.gradle</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">dependencies</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">compileOnly</span><span class="w"> </span><span class="n">files</span><span class="o">(</span><span class="s2">&quot;&lt;starmade_root&gt;/mods/AtlasCore-1.0.0.jar&quot;</span><span class="o">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="n">compileOnly</span><span class="w"> </span><span class="n">files</span><span class="o">(</span><span class="s2">&quot;&lt;starmade_root&gt;/mods/AtlasGuide-1.0.0.jar&quot;</span><span class="o">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="o">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// mod.json — load AtlasCore (9999) and AtlasGuide (10000) before this mod</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="p">{</span><span class="w"> </span><span class="nt">&quot;dependencies&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">9999</span><span class="p">,</span><span class="w"> </span><span class="mi">10000</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h3 id="gradle-build-tasks">Gradle build tasks</h3>
+<p>Copy the following tasks into your <code>build.gradle</code>. They sync your <code>.md</code> sources into <code>src/main/resources/docs/</code> and generate the <code>docs.index</code> manifest that <code>GuideManager</code> reads at runtime:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kt">def</span><span class="w"> </span><span class="n">docsSourceDir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">layout</span><span class="o">.</span><span class="na">projectDirectory</span><span class="o">.</span><span class="na">dir</span><span class="o">(</span><span class="s1">&#39;docs/markdown&#39;</span><span class="o">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kt">def</span><span class="w"> </span><span class="n">docsResourceDir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">layout</span><span class="o">.</span><span class="na">projectDirectory</span><span class="o">.</span><span class="na">dir</span><span class="o">(</span><span class="s1">&#39;src/main/resources/docs&#39;</span><span class="o">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">tasks</span><span class="o">.</span><span class="na">register</span><span class="o">(</span><span class="s1">&#39;syncDocumentationResources&#39;</span><span class="o">,</span><span class="w"> </span><span class="n">Sync</span><span class="o">)</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="n">from</span><span class="o">(</span><span class="n">docsSourceDir</span><span class="o">)</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="n">into</span><span class="o">(</span><span class="n">docsResourceDir</span><span class="o">)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="n">includeEmptyDirs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="o">}</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">tasks</span><span class="o">.</span><span class="na">register</span><span class="o">(</span><span class="s1">&#39;generateDocumentationIndex&#39;</span><span class="o">)</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">    </span><span class="n">dependsOn</span><span class="o">(</span><span class="s1">&#39;syncDocumentationResources&#39;</span><span class="o">)</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">    </span><span class="n">outputs</span><span class="o">.</span><span class="na">file</span><span class="o">(</span><span class="n">docsResourceDir</span><span class="o">.</span><span class="na">file</span><span class="o">(</span><span class="s1">&#39;docs.index&#39;</span><span class="o">))</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">    </span><span class="n">doLast</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">        </span><span class="kt">def</span><span class="w"> </span><span class="n">dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">docsResourceDir</span><span class="o">.</span><span class="na">asFile</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">        </span><span class="n">dir</span><span class="o">.</span><span class="na">mkdirs</span><span class="o">()</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="w">        </span><span class="kt">def</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fileTree</span><span class="o">(</span><span class="n">dir</span><span class="o">)</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">include</span><span class="w"> </span><span class="s1">&#39;**/*.md&#39;</span><span class="w"> </span><span class="o">}.</span><span class="na">files</span><span class="o">.</span><span class="na">collect</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">            </span><span class="n">dir</span><span class="o">.</span><span class="na">toPath</span><span class="o">().</span><span class="na">relativize</span><span class="o">(</span><span class="n">it</span><span class="o">.</span><span class="na">toPath</span><span class="o">()).</span><span class="na">toString</span><span class="o">().</span><span class="na">replace</span><span class="o">(</span><span class="n">File</span><span class="o">.</span><span class="na">separatorChar</span><span class="o">,</span><span class="w"> </span><span class="s1">&#39;/&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">char</span><span class="o">)</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="w">        </span><span class="o">}.</span><span class="na">sort</span><span class="o">()</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="w">        </span><span class="n">docsResourceDir</span><span class="o">.</span><span class="na">file</span><span class="o">(</span><span class="s1">&#39;docs.index&#39;</span><span class="o">).</span><span class="na">asFile</span><span class="o">.</span><span class="na">text</span><span class="w"> </span><span class="o">=</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="w">            </span><span class="n">files</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">files</span><span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="n">System</span><span class="o">.</span><span class="na">lineSeparator</span><span class="o">())</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">System</span><span class="o">.</span><span class="na">lineSeparator</span><span class="o">()</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="w">    </span><span class="o">}</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="o">}</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="n">tasks</span><span class="o">.</span><span class="na">named</span><span class="o">(</span><span class="s1">&#39;processResources&#39;</span><span class="o">)</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">dependsOn</span><span class="o">(</span><span class="s1">&#39;generateDocumentationIndex&#39;</span><span class="o">)</span><span class="w"> </span><span class="o">}</span>
+</code></pre></div>
+<p>Place your <code>.md</code> files in <code>docs/markdown/</code> — the first <code># Heading</code> becomes the document's display title.</p>
+<h3 id="loading-documents-at-runtime">Loading documents at runtime</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nd">@Override</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onClientCreated</span><span class="p">(</span><span class="n">ClientInitializeEvent</span><span class="w"> </span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="c1">// Guard so startup doesn&#39;t fail if AtlasGuide is absent</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">SubModRegistry</span><span class="p">.</span><span class="na">isLoaded</span><span class="p">(</span><span class="s">&quot;atlas_guide&quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">        </span><span class="c1">// Jar-bundled docs (requires docs/docs.index in your jar)</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">        </span><span class="n">GuideManager</span><span class="p">.</span><span class="na">loadDocs</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">        </span><span class="c1">// Optional: filesystem docs from moddata/MyMod/docs/</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">        </span><span class="c1">// The directory is created automatically; server admins can drop .md files there</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">        </span><span class="n">File</span><span class="w"> </span><span class="n">docsDir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="n">getSkeleton</span><span class="p">().</span><span class="na">getResourcesFolder</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;docs&quot;</span><span class="p">);</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">        </span><span class="n">GuideManager</span><span class="p">.</span><span class="na">loadDocsFromDirectory</span><span class="p">(</span><span class="n">docsDir</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">);</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>loadDocs</code> uses your mod's classloader to find resources in your jar. <code>loadDocsFromDirectory</code> scans a live filesystem directory recursively — no <code>docs.index</code> is required. Both methods append to the shared registry; the Guide dialog shows entries from all mods in load order.</p>
+<hr />
+<h2 id="8-key-bindings">8. Key Bindings</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1">// In onClientCreated:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">ControlBindingData</span><span class="p">.</span><span class="na">load</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">ControlBindingData</span><span class="p">.</span><span class="na">registerBinding</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Open My Menu&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Opens my menu.&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">77</span><span class="w"> </span><span class="cm">/* M */</span><span class="p">);</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1">// In onKeyPress:</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="nd">@Override</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">onKeyPress</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">bindingName</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;Open My Menu&quot;</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">bindingName</span><span class="p">))</span><span class="w"> </span><span class="n">openMyMenu</span><span class="p">();</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="p">}</span>
 </code></pre></div>
 
 
