@@ -1,12 +1,12 @@
 site_name: Atlas Mod Documentation
 site_description: Modular StarMade server mod framework
 site_url: https://garretreichenbach.github.io/AtlasCore/
-repo_url: https://github.com/garretreichenbach/AtlasCore
+repo_url: https://github.com/garretreichenbach/AtlasCore/
 repo_name: garretreichenbach/AtlasCore
 
 theme:
   name: material
-  palette:
+  palette:  
     - scheme: slate
       primary: deep purple
       accent: purple
