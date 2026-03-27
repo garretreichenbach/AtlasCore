@@ -16,8 +16,10 @@ import org.schema.schine.graphicsengine.forms.gui.newgui.GUIDialogWindow;
 import org.schema.schine.input.InputState;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * In-game guide dialog with a two-panel layout: a searchable topic list on the left
@@ -71,6 +73,7 @@ public class GuideDialog extends PlayerInput {
 		// ── state ─────────────────────────────────────────────────────────────
 		private final List<String> allTitles = new ArrayList<>(GuideManager.getTitles());
 		private final List<String> filteredTitles = new ArrayList<>();
+		private final Set<String> collapsedCategories = new HashSet<>();
 		private String selectedTitle;
 		private String searchQuery = "";
 
@@ -238,10 +241,50 @@ public class GuideDialog extends PlayerInput {
 				return;
 			}
 
-			for(String title : filteredTitles) {
-				y += addTopicButton(y, title);
+			// Group filtered titles by category, preserving the original category order
+			for(String category : GuideManager.getCategories()) {
+				List<String> titlesInCategory = new ArrayList<>();
+				for(String title : filteredTitles) {
+					if(GuideManager.getCategory(title).equals(category)) titlesInCategory.add(title);
+				}
+				if(titlesInCategory.isEmpty()) continue;
+
+				if(!category.isEmpty()) y += addCategoryHeader(y, category);
+				if(category.isEmpty() || !collapsedCategories.contains(category)) {
+					for(String title : titlesInCategory) y += addTopicButton(y, title);
+				}
 			}
 			topicsContent.setHeight(Math.max(40.0F, y));
+		}
+
+		private int addCategoryHeader(int y, String category) {
+			boolean collapsed = collapsedCategories.contains(category);
+			String arrow = collapsed ? "\u25B6 " : "\u25BC ";
+			int rowWidth = Math.max(120, (int) topicsContent.getWidth());
+
+			GUITextButton button = new GUITextButton(getState(), rowWidth, TOPIC_BUTTON_HEIGHT, GUITextButton.ColorPalette.NEUTRAL, arrow + category.toUpperCase(Locale.ROOT), new GUICallback() {
+				@Override
+				public void callback(GUIElement callingGuiElement, MouseEvent event) {
+					if(event.pressedLeftMouse()) {
+						if(collapsedCategories.contains(category)) collapsedCategories.remove(category);
+						else collapsedCategories.add(category);
+						rebuildTopicButtons();
+					}
+				}
+
+				@Override
+				public boolean isOccluded() {
+					return false;
+				}
+			});
+			button.setTextPos(6, 4);
+			button.setMouseUpdateEnabled(true);
+			button.setPos(0, y, 0);
+			button.onInit();
+			// Tint the button text blue to distinguish it from topic entries
+			button.setColor(0.55F, 0.70F, 1.0F, 1.0F);
+			topicsContent.attach(button);
+			return TOPIC_BUTTON_HEIGHT + TOPIC_BUTTON_GAP;
 		}
 
 		private int addTopicButton(int y, String title) {

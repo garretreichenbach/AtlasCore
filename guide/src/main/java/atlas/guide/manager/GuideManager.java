@@ -18,15 +18,21 @@ import java.util.*;
  * index and loads each document as raw markdown, extracting the first H1 heading as the
  * display title.
  *
+ * <p>Category grouping is derived from the subdirectory component of each path in
+ * {@code docs.index}. For example, {@code atlas-mods/atlas-core.md} belongs to the
+ * {@code "Atlas Mods"} category. Files at the root (e.g. {@code server-rules.md}) are
+ * placed in an implicit {@code ""} (uncategorized) group rendered at the top of the list.
+ *
  * <p>Rendering is intentionally deferred to the GUI layer so it runs on the graphics
- * thread
+ * thread.
  */
 public final class GuideManager {
 
-	/**
-	 * Maps display title → raw markdown source.
-	 */
+	/** Maps display title → raw markdown source. */
 	private static final Map<String, String> rawByTitle = new LinkedHashMap<>();
+
+	/** Maps display title → category name (empty = uncategorized). */
+	private static final Map<String, String> categoryByTitle = new LinkedHashMap<>();
 
 	private GuideManager() {
 	}
@@ -71,7 +77,9 @@ public final class GuideManager {
 			}
 			String markdown = readString(docStream);
 			String title = extractTitle(markdown, path);
+			String category = extractCategory(path.trim());
 			rawByTitle.put(title, markdown);
+			categoryByTitle.put(title, category);
 		}
 		mod.logInfo("[AtlasGuide] Loaded " + (rawByTitle.size() - before) + " guide document(s) from " + mod.getClass().getName() + " (total: " + rawByTitle.size() + ").");
 	}
@@ -118,7 +126,11 @@ public final class GuideManager {
 			try {
 				String markdown = readFile(file);
 				String title = extractTitle(markdown, file.getName());
+				// Derive category from the path relative to the root docs dir
+				String relativePath = dir.toURI().relativize(file.toURI()).getPath();
+				String category = extractCategory(relativePath);
 				rawByTitle.put(title, markdown);
+				categoryByTitle.put(title, category);
 			} catch(Exception e) {
 				mod.logWarning("[AtlasGuide] Failed to load " + file.getAbsolutePath() + ": " + e.getMessage());
 			}
@@ -126,18 +138,68 @@ public final class GuideManager {
 		mod.logInfo("[AtlasGuide] Loaded " + (rawByTitle.size() - before) + " guide document(s) from " + dir.getAbsolutePath() + " (total: " + rawByTitle.size() + ").");
 	}
 
+	/**
+	 * Returns all unique category names in the order they were first encountered.
+	 * The empty string {@code ""} represents uncategorized (root-level) documents
+	 * and is always first if any exist.
+	 */
+	public static List<String> getCategories() {
+		List<String> categories = new ArrayList<>();
+		for(String category : categoryByTitle.values()) {
+			if(!categories.contains(category)) categories.add(category);
+		}
+		return Collections.unmodifiableList(categories);
+	}
+
+	/**
+	 * Returns all document titles belonging to the given category, in insertion order.
+	 * Pass {@code ""} for uncategorized (root-level) documents.
+	 */
+	public static List<String> getTitlesForCategory(String category) {
+		List<String> titles = new ArrayList<>();
+		for(Map.Entry<String, String> entry : categoryByTitle.entrySet()) {
+			if(entry.getValue().equals(category)) titles.add(entry.getKey());
+		}
+		return Collections.unmodifiableList(titles);
+	}
+
+	/** Returns all document titles across all categories, in insertion order. */
 	public static List<String> getTitles() {
 		return Collections.unmodifiableList(new ArrayList<>(rawByTitle.keySet()));
 	}
 
-	/**
-	 * Returns the raw markdown for the given title, or an empty string if not found.
-	 */
+	/** Returns the raw markdown for the given title, or an empty string if not found. */
 	public static String getRaw(String title) {
 		return rawByTitle.getOrDefault(title, "");
 	}
 
+	/** Returns the category for the given title, or {@code ""} if uncategorized. */
+	public static String getCategory(String title) {
+		return categoryByTitle.getOrDefault(title, "");
+	}
+
 	// ── private helpers ───────────────────────────────────────────────────────
+
+	/**
+	 * Extracts a human-readable category name from a doc path.
+	 * {@code "atlas-mods/atlas-core.md"} → {@code "Atlas Mods"}.
+	 * Root-level paths (no directory component) return {@code ""}.
+	 */
+	private static String extractCategory(String path) {
+		int slash = path.lastIndexOf('/');
+		if(slash <= 0) return "";
+		String dir = path.substring(0, slash);
+		// Convert hyphen-separated dir name to title case: "atlas-mods" → "Atlas Mods"
+		String[] parts = dir.split("[-_]");
+		StringBuilder sb = new StringBuilder();
+		for(String part : parts) {
+			if(part.isEmpty()) continue;
+			if(sb.length() > 0) sb.append(' ');
+			sb.append(Character.toUpperCase(part.charAt(0)));
+			sb.append(part.substring(1).toLowerCase(Locale.ROOT));
+		}
+		return sb.toString();
+	}
 
 	private static String extractTitle(String markdown, String fallback) {
 		for(String line : markdown.split("\\n")) {
