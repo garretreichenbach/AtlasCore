@@ -1,7 +1,7 @@
 {
 	"name": "AtlasCore",
 	"author": "VideoGoose",
-	"description": "<DESCRIPTION>",
+	"description": "Shared infrastructure for the Atlas mod system. Every other Atlas module depends on AtlasCore.",
 	"version": "1.0.0",
 	"starmade_version": "0.205.4",
 	"client_mod": false,
@@ -13,8 +13,5 @@
 	],
 	"core_mod": false,
 	"requires_class_resize": false,
-	"hard_load_all_classes": false,
-	"mixin_configs": [
-		"atlascore.mixins.json"
-	]
+	"hard_load_all_classes": false
 }
