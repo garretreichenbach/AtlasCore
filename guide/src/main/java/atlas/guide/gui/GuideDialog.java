@@ -281,8 +281,6 @@ public class GuideDialog extends PlayerInput {
 			button.setMouseUpdateEnabled(true);
 			button.setPos(0, y, 0);
 			button.onInit();
-			// Tint the button text blue to distinguish it from topic entries
-			button.setColor(0.55F, 0.70F, 1.0F, 1.0F);
 			topicsContent.attach(button);
 			return TOPIC_BUTTON_HEIGHT + TOPIC_BUTTON_GAP;
 		}

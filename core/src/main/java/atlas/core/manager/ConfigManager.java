@@ -1,10 +1,6 @@
 package atlas.core.manager;
 
-import api.utils.simpleconfig.SimpleConfigBool;
-import api.utils.simpleconfig.SimpleConfigContainer;
-import api.utils.simpleconfig.SimpleConfigDouble;
-import api.utils.simpleconfig.SimpleConfigInt;
-import api.utils.simpleconfig.SimpleConfigString;
+import api.utils.simpleconfig.*;
 import atlas.core.AtlasCore;
 
 import java.util.Arrays;
@@ -18,28 +14,24 @@ public final class ConfigManager {
 
 	private static SimpleConfigContainer config;
 
-	private static SimpleConfigBool   debugMode;
+	private static SimpleConfigBool debugMode;
 	private static SimpleConfigString discordInviteCode;
-	private static SimpleConfigInt    tipIntervalSeconds;
+	private static SimpleConfigInt tipIntervalSeconds;
 	private static SimpleConfigString tips;
 
-	private ConfigManager() {}
+	private ConfigManager() {
+	}
 
 	public static void initialize(AtlasCore instance) {
 		config = new SimpleConfigContainer(instance, "config", false);
 
-		debugMode = new SimpleConfigBool(config, "debug_mode", false,
-				"If true, enables debug logging and features.");
+		debugMode = new SimpleConfigBool(config, "debug_mode", false, "If true, enables debug logging and features.");
 
-		discordInviteCode = new SimpleConfigString(config, "discord_invite_code", "kcb84yRwHU",
-				"Discord invite code used for the DISCORD top-bar button.");
+		discordInviteCode = new SimpleConfigString(config, "discord_invite_code", "kcb84yRwHU", "Discord invite code used for the DISCORD top-bar button.");
 
-		tipIntervalSeconds = new SimpleConfigInt(config, "tip_interval_seconds", 600,
-				"How often (in seconds) a random tip is broadcast to all players.");
+		tipIntervalSeconds = new SimpleConfigInt(config, "tip_interval_seconds", 600, "How often (in seconds) a random tip is broadcast to all players.");
 
-		tips = new SimpleConfigString(config, "tips",
-				"Welcome to the server!;Check /guide for server info.;Join our Discord for updates!",
-				"Semicolon-separated list of tips that are broadcast to players periodically.");
+		tips = new SimpleConfigString(config, "tips", "Welcome to the server!;Check /guide for server info.;Join our Discord for updates!", "Semicolon-separated list of tips that are broadcast to players periodically.");
 
 		config.readWriteFields();
 	}
