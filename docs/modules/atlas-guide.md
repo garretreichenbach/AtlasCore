@@ -76,8 +76,8 @@ Any mod can contribute documents to the shared guide dialog. The registry is **a
 ```groovy
 // build.gradle
 dependencies {
-    compileOnly files("<starmade_root>/mods/AtlasCore-1.0.0.jar")
-    compileOnly files("<starmade_root>/mods/AtlasGuide-1.0.0.jar")
+    compileOnly files("<starmade_root>/mods/AtlasCore-x.x.x.jar")
+    compileOnly files("<starmade_root>/mods/AtlasGuide-x.x..jar")
 }
 ```
 
