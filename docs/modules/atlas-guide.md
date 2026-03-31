@@ -108,4 +108,4 @@ public void onClientCreated(ClientInitializeEvent event) {
 
 > **Avoid title collisions.** If two mods register a document with the same `# Heading`, the later-loaded document wins. Prefix headings with your mod name (e.g. `# MyMod — Installation`) to stay unique.
 
-See [Creating a Sub-Mod — AtlasGuide Integration](../api/creating-a-submod.md#atlasguide-integration) for a complete walkthrough.
+See [Creating a Sub-Mod — AtlasGuide Integration](../api/creating-a-submod.md#7-atlasguide-integration) for a complete walkthrough.

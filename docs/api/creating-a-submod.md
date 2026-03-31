@@ -9,7 +9,7 @@ Add AtlasCore as a `compileOnly` dependency. It will not be bundled in your jar:
 ```groovy
 // build.gradle
 dependencies {
-    compileOnly files("<starmade_root>/mods/AtlasCore-1.0.0.jar")
+    compileOnly files("<starmade_root>/mods/AtlasCore-x.x.x.jar")
     // or if in the same multi-project:
     compileOnly project(':core')
 }
@@ -136,8 +136,8 @@ Add AtlasGuide as a `compileOnly` dependency and declare it in `mod.json`:
 ```groovy
 // build.gradle
 dependencies {
-    compileOnly files("<starmade_root>/mods/AtlasCore-1.0.0.jar")
-    compileOnly files("<starmade_root>/mods/AtlasGuide-1.0.0.jar")
+    compileOnly files("<starmade_root>/mods/AtlasCore-x.x.x.jar")
+    compileOnly files("<starmade_root>/mods/AtlasGuide-x.x.x.jar")
 }
 ```
 
