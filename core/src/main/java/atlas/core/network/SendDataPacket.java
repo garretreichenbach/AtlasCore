@@ -6,6 +6,7 @@ import api.network.PacketWriteBuffer;
 import atlas.core.AtlasCore;
 import atlas.core.data.SerializableData;
 import atlas.core.data.DataTypeRegistry;
+import org.json.JSONObject;
 import org.schema.game.common.data.player.PlayerState;
 
 import java.io.IOException;
@@ -29,9 +30,10 @@ public class SendDataPacket extends Packet {
 		try {
 			type = packetReadBuffer.readInt();
 			dataTypeName = packetReadBuffer.readString();
+			String dataJson = packetReadBuffer.readString();
 			DataTypeRegistry.Entry entry = DataTypeRegistry.get(dataTypeName);
 			if(entry != null) {
-				data = entry.deserializeNetwork(packetReadBuffer);
+				data = entry.deserializeJSON(new JSONObject(dataJson));
 			} else {
 				AtlasCore.getInstance().logWarning("No DataTypeRegistry entry found for type: " + dataTypeName);
 			}
@@ -44,7 +46,7 @@ public class SendDataPacket extends Packet {
 	public void writePacketData(PacketWriteBuffer packetWriteBuffer) throws IOException {
 		packetWriteBuffer.writeInt(type);
 		packetWriteBuffer.writeString(dataTypeName);
-		data.serializeNetwork(packetWriteBuffer);
+		packetWriteBuffer.writeString(data.serialize().toString());
 	}
 
 	@Override

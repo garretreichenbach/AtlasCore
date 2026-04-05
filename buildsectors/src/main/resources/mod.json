@@ -2,16 +2,16 @@
 	"name": "AtlasBuildSectors",
 	"author": "VideoGoose",
 	"description": "Private player creative building sectors for Atlas servers.",
-	"version": "1.0.2",
+	"version": "1.0.4",
 	"starmade_version": "0.205.4",
-	"client_mod": true,
-	"server_mod": true,
+	"client_mod": false,
+	"server_mod": false,
 	"main_class": "atlas.buildsectors.AtlasBuildSectors",
 	"smd_resource_id": 8760,
 	"dependencies": [
 		8757
 	],
-	"core_mod": true,
+	"core_mod": false,
 	"requires_class_resize": false,
 	"hard_load_all_classes": false,
 	"mixin_configs": [

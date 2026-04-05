@@ -2,10 +2,10 @@
 	"name": "AtlasGuide",
 	"author": "VideoGoose",
 	"description": "Modular in-game guide and documentation viewer for Atlas servers.",
-	"version": "1.0.2",
+	"version": "1.0.4",
 	"starmade_version": "0.205.4",
-	"client_mod": true,
-	"server_mod": true,
+	"client_mod": false,
+	"server_mod": false,
 	"main_class": "atlas.guide.AtlasGuide",
 	"smd_resource_id": 8758,
 	"dependencies": [

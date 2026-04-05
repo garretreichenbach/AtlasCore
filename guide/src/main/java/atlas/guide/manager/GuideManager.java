@@ -60,7 +60,7 @@ public final class GuideManager {
 	public static void loadDocs(StarMod mod) {
 		ClassLoader cl = mod.getClass().getClassLoader();
 
-		InputStream indexStream = cl.getResourceAsStream("docs/docs.index");
+		InputStream indexStream = cl.getResourceAsStream("atlas-guide-docs/docs.index");
 		if(indexStream == null) {
 			mod.logWarning("[AtlasGuide] docs.index not found in " + mod.getClass().getName() + " — no guide documents loaded.");
 			return;
@@ -69,7 +69,7 @@ public final class GuideManager {
 		int before = rawByTitle.size();
 		for(String path : readLines(indexStream)) {
 			if(path.trim().isEmpty()) continue;
-			String resourcePath = "docs/" + path.trim();
+			String resourcePath = "atlas-guide-docs/" + path.trim();
 			InputStream docStream = cl.getResourceAsStream(resourcePath);
 			if(docStream == null) {
 				mod.logWarning("[AtlasGuide] Missing doc resource: " + resourcePath);

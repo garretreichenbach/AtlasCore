@@ -2,10 +2,10 @@
 	"name": "AtlasCore",
 	"author": "VideoGoose",
 	"description": "Shared infrastructure for the Atlas mod system. Every other Atlas module depends on AtlasCore.",
-	"version": "1.0.2",
+	"version": "1.0.4",
 	"starmade_version": "0.205.4",
-	"client_mod": true,
-	"server_mod": true,
+	"client_mod": false,
+	"server_mod": false,
 	"main_class": "atlas.core.AtlasCore",
 	"smd_resource_id": 8757,
 	"dependencies": [
