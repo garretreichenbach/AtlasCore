@@ -142,14 +142,14 @@ dependencies {
   &quot;server_mod&quot;: true,
   &quot;main_class&quot;: &quot;com.example.mymod.MyMod&quot;,
   &quot;smd_resource_id&quot;: 20000,
-  &quot;dependencies&quot;: [9999],
+  &quot;dependencies&quot;: [8757],
   &quot;core_mod&quot;: false,
   &quot;requires_class_resize&quot;: false,
   &quot;hard_load_all_classes&quot;: false
 }
 </code></pre>
 
-<p>The <code>"dependencies": [9999]</code> entry ensures AtlasCore is loaded first.</p>
+<p>The <code>"dependencies": [8757]</code> entry ensures AtlasCore is loaded first.</p>
 <h2 id="3-main-class">3. Main Class</h2>
 <pre class="codehilite"><code class="language-java">public class MyMod extends StarMod implements IAtlasSubMod {
 
@@ -242,8 +242,8 @@ dependencies {
 }
 </code></pre>
 
-<pre class="codehilite"><code class="language-json">// mod.json — load AtlasCore (9999) and AtlasGuide (10000) before this mod
-{ &quot;dependencies&quot;: [9999, 10000] }
+<pre class="codehilite"><code class="language-json">// mod.json — load AtlasCore (8757) and AtlasGuide (8758) before this mod
+{ &quot;dependencies&quot;: [8757, 8758] }
 </code></pre>
 
 <h3 id="gradle-build-tasks">Gradle build tasks</h3>
