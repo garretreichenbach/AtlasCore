@@ -4,6 +4,7 @@ import api.config.BlockConfig;
 import api.listener.events.controller.ClientInitializeEvent;
 import api.listener.events.player.PlayerSpawnEvent;
 import api.mod.StarMod;
+import api.utils.element.Blocks;
 import api.utils.game.inventory.InventoryUtils;
 import api.utils.textures.StarLoaderTexture;
 import atlas.core.api.IAtlasSubMod;
@@ -16,7 +17,6 @@ import atlas.core.manager.PlayerActionRegistry;
 import atlas.core.utils.EntityUtils;
 import atlas.exchange.data.ExchangeData;
 import atlas.exchange.data.ExchangeDataManager;
-import atlas.exchange.element.ElementRegistry;
 import atlas.exchange.gui.ExchangeDialog;
 import atlas.exchange.tests.ExchangeDataTest;
 import com.bulletphysics.linearmath.Transform;
@@ -103,7 +103,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	 */
 	private static boolean validateAndDeduct(PlayerState buyer, ExchangeData listing) {
 		if(!buyer.getInventory().hasFreeSlot()) return false;
-		short goldBarId = ElementRegistry.GOLD_BAR.getId();
+		short goldBarId = Blocks.GOLD_BAR.getId();
 		if(goldBarId != -1) {
 			if(InventoryUtils.getItemAmount(buyer.getInventory(), goldBarId) < listing.getPrice()) return false;
 			InventoryUtils.consumeItems(buyer.getInventory(), goldBarId, listing.getPrice());
@@ -124,7 +124,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 		meta.blueprintName = catalogName;
 		if(meta.goal == null) meta.goal = new ElementCountMap();
 		if(meta.progress == null) meta.progress = new ElementCountMap();
-		int slot = 0;
+		int slot;
 		try {
 			slot = buyer.getInventory().getFreeSlot();
 		} catch(NoSlotFreeException e) {
@@ -243,7 +243,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	 * server restarts.
 	 */
 	private static void creditSeller(String sellerName, int amount) {
-		if(amount <= 0 || ElementRegistry.GOLD_BAR.getId() == -1) return;
+		if(amount <= 0 || Blocks.GOLD_BAR.getId() == -1) return;
 		PlayerDataManager pdm = PlayerDataManager.getInstance(true);
 		PlayerData data = pdm.getFromName(sellerName, true);
 		if(data == null) return;
@@ -273,7 +273,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 		if(data == null) return;
 		int pending = data.getPendingExchangeCredits();
 		if(pending <= 0) return;
-		short goldBarId = ElementRegistry.GOLD_BAR.getId();
+		short goldBarId = Blocks.GOLD_BAR.getId();
 		if(goldBarId == -1) return;
 		// getInventory() returns the player's personal inventory regardless of
 		// creative mode — StarMade creative mode does not use a separate inventory.
@@ -311,11 +311,6 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	public void onClientCreated(ClientInitializeEvent event) {
 		ControlBindingData.load(this);
 		ControlBindingData.registerBinding(this, "Open Exchange Menu", "Opens the Exchange menu.", 74 /* J */);
-	}
-
-	@Override
-	public void onBlockConfigLoad(BlockConfig config) {
-		ElementRegistry.registerElements();
 	}
 
 	@Override

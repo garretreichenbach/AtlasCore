@@ -2,6 +2,7 @@ package atlas.exchange.gui;
 
 import api.common.GameClient;
 import api.network.packets.PacketUtil;
+import api.utils.element.Blocks;
 import api.utils.game.inventory.InventoryUtils;
 import atlas.core.api.SubModRegistry;
 import atlas.core.data.DataManager;
@@ -9,7 +10,6 @@ import atlas.core.network.PlayerActionCommandPacket;
 import atlas.exchange.AtlasExchange;
 import atlas.exchange.data.ExchangeData;
 import atlas.exchange.data.ExchangeDataManager;
-import atlas.exchange.element.ElementRegistry;
 import org.schema.common.util.StringTools;
 import org.schema.game.client.controller.PlayerOkCancelInput;
 import org.schema.game.client.data.GameClientState;
@@ -424,7 +424,7 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 			return "You don't have enough space in your inventory to buy this item!";
 		}
 		if(isInBuildSector(state)) return "You can't do this while in a build sector!";
-		short goldBarId = ElementRegistry.GOLD_BAR.getId();
+		short goldBarId = Blocks.GOLD_BAR.getId();
 		if(type == ExchangeData.SHIPS || type == ExchangeData.STATIONS) {
 			if(!hasPermission(data)) return "Selected blueprint is not available or you don't have access to it!";
 			if(goldBarId != -1) {

@@ -69,8 +69,15 @@ subprojects {
     def starmadeJar = file(smDir + "StarMade.jar")
     def starmadeLibDir = file(smDir + "lib")
 
+    // Load subproject-local gradle.properties for per-module versioning
+    def localProps = new Properties()
+    def localPropsFile = file("${project.projectDir}/gradle.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.withInputStream { localProps.load(it) }
+    }
+
     group = rootProject.property('mod_org_id')
-    version = rootProject.property('mod_version')
+    version = localProps.getProperty('mod_version', rootProject.property('mod_version'))
 
     java {
         sourceCompatibility = JavaVersion.VERSION_1_8
