@@ -2,7 +2,7 @@
 	"name": "AtlasGuide",
 	"author": "VideoGoose",
 	"description": "Modular in-game guide and documentation viewer for Atlas servers.",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"starmade_version": "0.205.4",
 	"client_mod": false,
 	"server_mod": false,
