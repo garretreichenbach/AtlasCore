@@ -17,11 +17,11 @@ StarMade's mod loader will automatically detect the dependency relationship and 
 
 ## Sub-Mod Dependencies
 
-All Atlas sub-mods declare `AtlasCore` (`smd_resource_id: 9999`) as a dependency in their `mod.json`. You do **not** need to configure this manually — the loader handles it.
+All Atlas sub-mods declare `AtlasCore` (`smd_resource_id: 8757`) as a dependency in their `mod.json`. You do **not** need to configure this manually — the loader handles it.
 
 ```json
 {
-  "dependencies": [9999]
+  "dependencies": [8757]
 }
 ```
 

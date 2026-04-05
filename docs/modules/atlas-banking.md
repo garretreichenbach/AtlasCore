@@ -1,6 +1,6 @@
 # AtlasBanking
 
-`smd_resource_id: 10001` · Depends on AtlasCore (`9999`)
+`smd_resource_id: 8761` · Depends on AtlasCore (`8757`)
 
 AtlasBanking provides a player banking system separate from StarMade's built-in credit wallet, plus prize bar collectible items.
 

@@ -1,6 +1,6 @@
 # AtlasExchange
 
-`smd_resource_id: 10003` · Depends on AtlasCore (`9999`)
+`smd_resource_id: 8759` · Depends on AtlasCore (`8757`)
 
 AtlasExchange provides a player-driven marketplace for ships, stations, items, and weapons.
 

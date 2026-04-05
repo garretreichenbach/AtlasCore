@@ -44,7 +44,7 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 	/**
 	 * Distance from origin at which build sectors are placed.
 	 */
-	public static final int BUILD_SECTOR_DISTANCE = 1000000;
+	public static final int BUILD_SECTOR_DISTANCE = 875800;
 
 	public static int ENTER_BUILD_SECTOR;
 	public static int LEAVE_BUILD_SECTOR;

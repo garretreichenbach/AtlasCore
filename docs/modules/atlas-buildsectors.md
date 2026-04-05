@@ -1,6 +1,6 @@
 # AtlasBuildSectors
 
-`smd_resource_id: 10002` · Depends on AtlasCore (`9999`)
+`smd_resource_id: 8760` · Depends on AtlasCore (`8757`)
 
 AtlasBuildSectors gives each player a private creative sector far from the main universe, with a fine-grained permission system.
 

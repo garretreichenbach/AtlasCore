@@ -1,6 +1,6 @@
 # AtlasGuide
 
-`smd_resource_id: 10000` · Depends on AtlasCore (`9999`)
+`smd_resource_id: 8758` · Depends on AtlasCore (`8757`)
 
 AtlasGuide provides an in-game markdown guide dialog using StarMade's native GUI rendering system.
 
@@ -83,7 +83,7 @@ dependencies {
 
 ```json
 // mod.json
-{ "dependencies": [9999, 10000] }
+{ "dependencies": [8757, 8758] }
 ```
 
 ### Bundle docs in your jar

@@ -143,7 +143,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	 * and the buyer loading them into a shipyard.</p>
 	 */
 	private static Vector3i getStagingSector(String playerName) {
-		int hash = Math.abs(playerName.hashCode()) % 1000000;
+		int hash = Math.abs(playerName.hashCode()) % 875800;
 		return new Vector3i(1500000 + hash, 0, 0);
 	}
 

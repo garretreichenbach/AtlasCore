@@ -27,14 +27,14 @@ dependencies {
   "server_mod": true,
   "main_class": "com.example.mymod.MyMod",
   "smd_resource_id": 20000,
-  "dependencies": [9999],
+  "dependencies": [8757],
   "core_mod": false,
   "requires_class_resize": false,
   "hard_load_all_classes": false
 }
 ```
 
-The `"dependencies": [9999]` entry ensures AtlasCore is loaded first.
+The `"dependencies": [8757]` entry ensures AtlasCore is loaded first.
 
 ## 3. Main Class
 
@@ -142,8 +142,8 @@ dependencies {
 ```
 
 ```json
-// mod.json — load AtlasCore (9999) and AtlasGuide (10000) before this mod
-{ "dependencies": [9999, 10000] }
+// mod.json — load AtlasCore (8757) and AtlasGuide (8758) before this mod
+{ "dependencies": [8757, 8758] }
 ```
 
 ### Gradle build tasks

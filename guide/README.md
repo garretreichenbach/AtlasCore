@@ -62,11 +62,11 @@ Declare both as `compileOnly` — neither jar is bundled in your output.
 
 ```json
 {
-  "dependencies": [9999, 10000]
+  "dependencies": [8757, 8758]
 }
 ```
 
-This ensures AtlasCore (9999) and AtlasGuide (10000) are loaded before your mod.
+This ensures AtlasCore (8757) and AtlasGuide (8758) are loaded before your mod.
 
 ### 3. Bundle documents in your jar
 

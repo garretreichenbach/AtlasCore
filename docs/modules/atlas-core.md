@@ -1,6 +1,6 @@
 # AtlasCore
 
-`smd_resource_id: 9999` · Required by all sub-mods
+`smd_resource_id: 8757` · Required by all sub-mods
 
 AtlasCore is the shared infrastructure layer. It provides the data system, networking, sub-mod API, element registration, and Mixin support.
 
