@@ -51,7 +51,7 @@
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../../modules/atlas-core/">AtlasCore</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../modules/atlas-guide/">AtlasGuide</a>
+                  <li class="toctree-l1"><a class="" href="../../modules/atlas-guide.md">AtlasGuide</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../modules/atlas-banking/">AtlasBanking</a>
                   </li>
@@ -76,15 +76,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#6-player-events">6. Player Events</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#7-atlasguide-integration">7. AtlasGuide Integration</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#dependencies">Dependencies</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#gradle-build-tasks">Gradle build tasks</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#loading-documents-at-runtime">Loading documents at runtime</a>
-    </li>
-        </ul>
+    <li class="toctree-l2"><a class="reference internal" href="#7-in-game-guides">7. In-Game Guides</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#8-key-bindings">8. Key Bindings</a>
     </li>
@@ -231,67 +223,20 @@ public void onPlayerJoinWorld(PlayerJoinWorldEvent event) {
 }
 </code></pre>
 
-<h2 id="7-atlasguide-integration">7. AtlasGuide Integration</h2>
-<p>If AtlasGuide is installed, your mod can add documents to the shared in-game guide. This is entirely optional — AtlasGuide is not required to use AtlasCore.</p>
-<h3 id="dependencies">Dependencies</h3>
-<p>Add AtlasGuide as a <code>compileOnly</code> dependency and declare it in <code>mod.json</code>:</p>
-<pre class="codehilite"><code class="language-groovy">// build.gradle
-dependencies {
-    compileOnly files(&quot;&lt;starmade_root&gt;/mods/AtlasCore-x.x.x.jar&quot;)
-    compileOnly files(&quot;&lt;starmade_root&gt;/mods/AtlasGuide-x.x.x.jar&quot;)
-}
-</code></pre>
-
-<pre class="codehilite"><code class="language-json">// mod.json — load AtlasCore (8757) and AtlasGuide (8758) before this mod
-{ &quot;dependencies&quot;: [8757, 8758] }
-</code></pre>
-
-<h3 id="gradle-build-tasks">Gradle build tasks</h3>
-<p>Copy the following tasks into your <code>build.gradle</code>. They sync your <code>.md</code> sources into <code>src/main/resources/docs/</code> and generate the <code>docs.index</code> manifest that <code>GuideManager</code> reads at runtime:</p>
-<pre class="codehilite"><code class="language-groovy">def docsSourceDir = layout.projectDirectory.dir('docs/markdown')
-def docsResourceDir = layout.projectDirectory.dir('src/main/resources/docs')
-
-tasks.register('syncDocumentationResources', Sync) {
-    from(docsSourceDir)
-    into(docsResourceDir)
-    includeEmptyDirs = false
-}
-
-tasks.register('generateDocumentationIndex') {
-    dependsOn('syncDocumentationResources')
-    outputs.file(docsResourceDir.file('docs.index'))
-    doLast {
-        def dir = docsResourceDir.asFile
-        dir.mkdirs()
-        def files = fileTree(dir) { include '**/*.md' }.files.collect {
-            dir.toPath().relativize(it.toPath()).toString().replace(File.separatorChar, '/' as char)
-        }.sort()
-        docsResourceDir.file('docs.index').asFile.text =
-            files.isEmpty() ? '' : files.join(System.lineSeparator()) + System.lineSeparator()
-    }
-}
-
-tasks.named('processResources') { dependsOn('generateDocumentationIndex') }
-</code></pre>
-
-<p>Place your <code>.md</code> files in <code>docs/markdown/</code> — the first <code># Heading</code> becomes the document's display title.</p>
-<h3 id="loading-documents-at-runtime">Loading documents at runtime</h3>
+<h2 id="7-in-game-guides">7. In-Game Guides</h2>
+<p>StarMade has a built-in guide system. Your mod can register guide pages by overriding <code>onRegisterGuides()</code>:</p>
 <pre class="codehilite"><code class="language-java">@Override
-public void onClientCreated(ClientInitializeEvent event) {
-    // Guard so startup doesn't fail if AtlasGuide is absent
-    if (SubModRegistry.isLoaded(&quot;atlas_guide&quot;)) {
-        // Jar-bundled docs (requires docs/docs.index in your jar)
-        GuideManager.loadDocs(this);
+public void onRegisterGuides(GuidesRegistry.ModGuideRegistrar registrar) {
+    // Inline markdown
+    registrar.register(&quot;my-mod&quot;, &quot;My Mod&quot;, &quot;Getting Started&quot;, &quot;# Getting Started\n...&quot;);
 
-        // Optional: filesystem docs from moddata/MyMod/docs/
-        // The directory is created automatically; server admins can drop .md files there
-        File docsDir = new File(getSkeleton().getResourcesFolder(), &quot;docs&quot;);
-        GuideManager.loadDocsFromDirectory(docsDir, this);
-    }
+    // From a resource file bundled in your jar
+    registrar.registerFromResource(&quot;my-mod&quot;, &quot;My Mod&quot;, &quot;Advanced Features&quot;,
+        &quot;guides/advanced.md&quot;, this);
 }
 </code></pre>
 
-<p><code>loadDocs</code> uses your mod's classloader to find resources in your jar. <code>loadDocsFromDirectory</code> scans a live filesystem directory recursively — no <code>docs.index</code> is required. Both methods append to the shared registry; the Guide dialog shows entries from all mods in load order.</p>
+<p>Place <code>.md</code> files in <code>src/main/resources/guides/</code> so they are bundled in your jar. All Atlas modules use the section key <code>"atlas"</code> and label <code>"Atlas"</code> so their guides are grouped together.</p>
 <hr />
 <h2 id="8-key-bindings">8. Key Bindings</h2>
 <pre class="codehilite"><code class="language-java">// In onClientCreated:
