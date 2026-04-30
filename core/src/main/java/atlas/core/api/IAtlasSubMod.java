@@ -12,7 +12,7 @@ import org.schema.game.client.view.gui.newgui.GUITopBar;
  */
 public interface IAtlasSubMod {
 
-    /** Unique identifier for this sub-mod (e.g. "atlas_guide", "atlas_banking"). */
+    /** Unique identifier for this sub-mod (e.g. "atlas_banking", "atlas_exchange"). */
     String getModId();
 
     /** The StarMod instance for this sub-mod. */

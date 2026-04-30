@@ -2,8 +2,8 @@
 	"name": "AtlasBuildSectors",
 	"author": "VideoGoose",
 	"description": "Private player creative building sectors for Atlas servers.",
-	"version": "1.0.4",
-	"starmade_version": "0.205.4",
+	"version": "1.0.5",
+	"starmade_version": "0.303.4",
 	"client_mod": false,
 	"server_mod": false,
 	"main_class": "atlas.buildsectors.AtlasBuildSectors",
@@ -11,9 +11,6 @@
 	"dependencies": [
 		8757
 	],
-	"core_mod": false,
-	"requires_class_resize": false,
-	"hard_load_all_classes": false,
 	"mixin_configs": [
 		"atlasbuildsectors.mixins.json"
 	]

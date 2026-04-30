@@ -20,6 +20,7 @@ import atlas.exchange.data.ExchangeDataManager;
 import atlas.exchange.gui.ExchangeDialog;
 import atlas.exchange.tests.ExchangeDataTest;
 import com.bulletphysics.linearmath.Transform;
+import org.schema.game.client.view.mainmenu.GuidesRegistry;
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.client.view.gui.newgui.GUITopBar;
 import org.schema.game.common.controller.ElementCountMap;
@@ -316,6 +317,11 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	@Override
 	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
 		registrar.register(ExchangeDataTest.class);
+	}
+
+	@Override
+	public void onRegisterGuides(GuidesRegistry.ModGuideRegistrar registrar) {
+		registrar.registerFromResource("atlas", "Atlas", "AtlasExchange", "guides/atlas-exchange.md", this);
 	}
 
 	@Override

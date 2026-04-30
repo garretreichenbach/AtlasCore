@@ -125,79 +125,23 @@ public void onPlayerJoinWorld(PlayerJoinWorldEvent event) {
 }
 ```
 
-## 7. AtlasGuide Integration
+## 7. In-Game Guides
 
-If AtlasGuide is installed, your mod can add documents to the shared in-game guide. This is entirely optional — AtlasGuide is not required to use AtlasCore.
-
-### Dependencies
-
-Add AtlasGuide as a `compileOnly` dependency and declare it in `mod.json`:
-
-```groovy
-// build.gradle
-dependencies {
-    compileOnly files("<starmade_root>/mods/AtlasCore-x.x.x.jar")
-    compileOnly files("<starmade_root>/mods/AtlasGuide-x.x.x.jar")
-}
-```
-
-```json
-// mod.json — load AtlasCore (8757) and AtlasGuide (8758) before this mod
-{ "dependencies": [8757, 8758] }
-```
-
-### Gradle build tasks
-
-Copy the following tasks into your `build.gradle`. They sync your `.md` sources into `src/main/resources/docs/` and generate the `docs.index` manifest that `GuideManager` reads at runtime:
-
-```groovy
-def docsSourceDir = layout.projectDirectory.dir('docs/markdown')
-def docsResourceDir = layout.projectDirectory.dir('src/main/resources/docs')
-
-tasks.register('syncDocumentationResources', Sync) {
-    from(docsSourceDir)
-    into(docsResourceDir)
-    includeEmptyDirs = false
-}
-
-tasks.register('generateDocumentationIndex') {
-    dependsOn('syncDocumentationResources')
-    outputs.file(docsResourceDir.file('docs.index'))
-    doLast {
-        def dir = docsResourceDir.asFile
-        dir.mkdirs()
-        def files = fileTree(dir) { include '**/*.md' }.files.collect {
-            dir.toPath().relativize(it.toPath()).toString().replace(File.separatorChar, '/' as char)
-        }.sort()
-        docsResourceDir.file('docs.index').asFile.text =
-            files.isEmpty() ? '' : files.join(System.lineSeparator()) + System.lineSeparator()
-    }
-}
-
-tasks.named('processResources') { dependsOn('generateDocumentationIndex') }
-```
-
-Place your `.md` files in `docs/markdown/` — the first `# Heading` becomes the document's display title.
-
-### Loading documents at runtime
+StarMade has a built-in guide system. Your mod can register guide pages by overriding `onRegisterGuides()`:
 
 ```java
 @Override
-public void onClientCreated(ClientInitializeEvent event) {
-    // Guard so startup doesn't fail if AtlasGuide is absent
-    if (SubModRegistry.isLoaded("atlas_guide")) {
-        // Jar-bundled docs (requires docs/docs.index in your jar)
-        GuideManager.loadDocs(this);
+public void onRegisterGuides(GuidesRegistry.ModGuideRegistrar registrar) {
+    // Inline markdown
+    registrar.register("my-mod", "My Mod", "Getting Started", "# Getting Started\n...");
 
-        // Optional: filesystem docs from moddata/MyMod/docs/
-        // The directory is created automatically; server admins can drop .md files there
-        File docsDir = new File(getSkeleton().getResourcesFolder(), "docs");
-        GuideManager.loadDocsFromDirectory(docsDir, this);
-    }
+    // From a resource file bundled in your jar
+    registrar.registerFromResource("my-mod", "My Mod", "Advanced Features",
+        "guides/advanced.md", this);
 }
 ```
 
-`loadDocs` uses your mod's classloader to find resources in your jar. `loadDocsFromDirectory` scans a live filesystem directory recursively — no `docs.index` is required. Both methods append to the shared registry; the Guide dialog shows entries from all mods in load order.
+Place `.md` files in `src/main/resources/guides/` so they are bundled in your jar. All Atlas modules use the section key `"atlas"` and label `"Atlas"` so their guides are grouped together.
 
 ---
 

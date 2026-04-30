@@ -2,16 +2,13 @@
 	"name": "AtlasExchange",
 	"author": "VideoGoose",
 	"description": "Player trading and blueprint marketplace for Atlas servers.",
-	"version": "1.0.3",
-	"starmade_version": "0.205.4",
+	"version": "1.0.4",
+	"starmade_version": "0.303.4",
 	"client_mod": false,
 	"server_mod": false,
 	"main_class": "atlas.exchange.AtlasExchange",
 	"smd_resource_id": 8759,
 	"dependencies": [
 		8757
-	],
-	"core_mod": false,
-	"requires_class_resize": false,
-	"hard_load_all_classes": false
+	]
 }

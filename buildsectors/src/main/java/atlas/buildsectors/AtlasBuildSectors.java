@@ -13,6 +13,7 @@ import atlas.buildsectors.data.BuildSectorData;
 import atlas.buildsectors.data.BuildSectorDataManager;
 import atlas.buildsectors.drawer.BuildSectorHudDrawer;
 import atlas.buildsectors.gui.BuildSectorDialog;
+import org.schema.game.client.view.mainmenu.GuidesRegistry;
 import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
 import atlas.core.data.DataManager;
@@ -125,6 +126,11 @@ public class AtlasBuildSectors extends StarMod implements IAtlasSubMod {
 
 	@Override
 	public void onBlockConfigLoad(BlockConfig config) {
+	}
+
+	@Override
+	public void onRegisterGuides(GuidesRegistry.ModGuideRegistrar registrar) {
+		registrar.registerFromResource("atlas", "Atlas", "AtlasBuildSectors", "guides/atlas-buildsectors.md", this);
 	}
 
 	@Override

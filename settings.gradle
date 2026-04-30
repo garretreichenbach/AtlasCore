@@ -1,2 +1,2 @@
 rootProject.name = 'Atlas'
-include 'core', 'guide', 'banking', 'buildsectors', 'exchange'
+include 'core', 'banking', 'buildsectors', 'exchange'

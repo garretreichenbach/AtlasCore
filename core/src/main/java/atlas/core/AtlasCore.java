@@ -22,6 +22,7 @@ import atlas.core.network.SyncRequestPacket;
 import atlas.core.tests.DataTypeRegistryTest;
 import atlas.core.tests.PlayerActionRegistryTest;
 import org.json.JSONObject;
+import org.schema.game.client.view.mainmenu.GuidesRegistry;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.server.test.TestRegistry;
 
@@ -54,6 +55,13 @@ public class AtlasCore extends StarMod {
 	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
 		registrar.register(PlayerActionRegistryTest.class);
 		registrar.register(DataTypeRegistryTest.class);
+	}
+
+	@Override
+	public void onRegisterGuides(GuidesRegistry.ModGuideRegistrar registrar) {
+		registrar.registerFromResource("atlas", "Atlas", "Atlas Mod Guide", "guides/atlas-mod-guide.md", this);
+		registrar.registerFromResource("atlas", "Atlas", "AtlasCore", "guides/atlas-core.md", this);
+		registrar.registerFromResource("atlas", "Atlas", "Server Rules", "guides/server-rules.md", this);
 	}
 
 	@Override

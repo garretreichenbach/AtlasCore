@@ -31,7 +31,7 @@ public final class ConfigManager {
 
 		tipIntervalSeconds = new SimpleConfigInt(config, "tip_interval_seconds", 600, "How often (in seconds) a random tip is broadcast to all players.");
 
-		tips = new SimpleConfigString(config, "tips", "Welcome to the server!;Check /guide for server info.;Join our Discord for updates!", "Semicolon-separated list of tips that are broadcast to players periodically.");
+		tips = new SimpleConfigString(config, "tips", "Welcome to the server!;Check the Guides menu for server info.;Join our Discord for updates!", "Semicolon-separated list of tips that are broadcast to players periodically.");
 
 		config.readWriteFields();
 	}

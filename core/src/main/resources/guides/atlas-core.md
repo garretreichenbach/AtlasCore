@@ -24,7 +24,7 @@ Third-party mods can depend on AtlasCore to access its APIs:
 - Implement `IAtlasSubMod` and register with `SubModRegistry`
 - Use `PlayerDataManager` to read and write persistent player records
 - Use `PlayerActionRegistry` to register server-side action handlers
-- Call `GuideManager.loadDocs(this)` from `onClientCreated()` to add docs to this guide
+- Override `onRegisterGuides()` to add documentation to the in-game Guides viewer
 
 ---
 

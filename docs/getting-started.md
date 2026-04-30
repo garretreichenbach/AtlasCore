@@ -10,7 +10,7 @@
 
 1. Download the mod jars from the [Releases](https://github.com/videogoose/AtlasCore/releases) page.
 2. Copy **AtlasCore** into your `mods/` directory — this is **required** by all other Atlas mods.
-3. Copy any sub-mod jars you want (`AtlasGuide`, `AtlasBanking`, etc.) into `mods/`.
+3. Copy any sub-mod jars you want (`AtlasBanking`, `AtlasBuildSectors`, etc.) into `mods/`.
 4. Start your server.
 
 StarMade's mod loader will automatically detect the dependency relationship and initialize AtlasCore before any sub-mods.

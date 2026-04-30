@@ -10,14 +10,13 @@ sub-mod that server administrators can load or unload independently.
 | Module | Description |
 |---|---|
 | **AtlasCore** | Core infrastructure — always required |
-| **AtlasGuide** | This guide viewer |
 | **AtlasBanking** | Player banking and prize bar economy |
 | **AtlasBuildSectors** | Private creative building sectors |
 | **AtlasExchange** | Blueprint and item marketplace |
 
 ## Getting Help
 
-- Use `/guide` to re-open this menu at any time.
+- Open the Guides menu to browse documentation at any time.
 - Join the Discord server via the **DISCORD** button in the top-right player menu.
 
 ## Banking

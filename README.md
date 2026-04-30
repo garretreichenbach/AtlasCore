@@ -10,7 +10,6 @@ Atlas is a modular StarMade server mod system that replaces the monolithic EdenC
 | [AtlasBanking](banking/) | `AtlasBanking-x.x.x.jar` | Player credit accounts and transaction history |
 | [AtlasBuildSectors](buildsectors/) | `AtlasBuildSectors-x.x.x.jar` | Protected build zones with per-entity permission control |
 | [AtlasExchange](exchange/) | `AtlasExchange-x.x.x.jar` | Blueprint and item marketplace with gold bar currency |
-| [AtlasGuide](guide/) | `AtlasGuide-x.x.x.jar` | In-game markdown guide viewer |
 
 ## Requirements
 
@@ -27,7 +26,6 @@ StarMade/mods/
   AtlasBanking-x.x.x.jar    ← optional
   AtlasBuildSectors-x.x.x.jar
   AtlasExchange-x.x.x.jar
-  AtlasGuide-x.x.x.jar
 ```
 
 ## Building
@@ -55,7 +53,6 @@ gradle :core:jar
 gradle :banking:jar
 gradle :buildsectors:jar
 gradle :exchange:jar
-gradle :guide:jar
 ```
 
 ### Full build with tests (compile-time verification)
@@ -73,7 +70,6 @@ Test classes are bundled in each jar and registered at startup via `onRegisterTe
 /run_tests atlas.core.tests.*
 /run_tests atlas.banking.tests.*
 /run_tests atlas.exchange.tests.*
-/run_tests atlas.guide.tests.*
 ```
 
 ## CI / CD
@@ -92,7 +88,6 @@ AtlasCore/
 ├── banking/        AtlasBanking
 ├── buildsectors/   AtlasBuildSectors
 ├── exchange/       AtlasExchange
-├── guide/          AtlasGuide
 ├── docs/           MkDocs documentation source
 ├── build.gradle    Root build script (shared config + buildAll task)
 ├── settings.gradle Multi-project settings

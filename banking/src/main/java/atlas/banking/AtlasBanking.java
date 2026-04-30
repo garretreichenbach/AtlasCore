@@ -9,6 +9,7 @@ import atlas.banking.data.BankingData;
 import atlas.banking.data.BankingDataManager;
 import atlas.banking.gui.BankingDialog;
 import atlas.banking.tests.BankingDataTest;
+import org.schema.game.client.view.mainmenu.GuidesRegistry;
 import org.schema.game.server.test.TestRegistry;
 import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
@@ -68,6 +69,11 @@ public class AtlasBanking extends StarMod implements IAtlasSubMod {
 	@Override
 	public void onRegisterTests(TestRegistry.ModTestRegistrar registrar) {
 		registrar.register(BankingDataTest.class);
+	}
+
+	@Override
+	public void onRegisterGuides(GuidesRegistry.ModGuideRegistrar registrar) {
+		registrar.registerFromResource("atlas", "Atlas", "AtlasBanking", "guides/atlas-banking.md", this);
 	}
 
 	@Override

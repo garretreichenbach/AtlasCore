@@ -9,7 +9,6 @@ Atlas is split into one core mod and several independent feature mods:
 | Mod | ID | Features |
 |-----|----|----------|
 | **AtlasCore** | `8757` | Shared infrastructure: data system, networking, element API, mixins |
-| **AtlasGuide** | `8758` | Markdown-based in-game guide system |
 | **AtlasBanking** | `8761` | Player banking, credit transfers, prize bars |
 | **AtlasBuildSectors** | `8760` | Private creative build sectors per player |
 | **AtlasExchange** | `8759` | Player trading and blueprint marketplace |
