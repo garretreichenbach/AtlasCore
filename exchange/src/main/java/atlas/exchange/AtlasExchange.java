@@ -492,19 +492,11 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 			if(!validateAndDeduct(buyer, listing)) return;
 			boolean delivered;
 			try {
-				switch(kind) {
-					case ITEM:
-						delivered = giveListingItem(buyer, listing);
-						break;
-					case BLUEPRINT:
-						delivered = giveBlueprintItem(buyer, listing.getCatalogName());
-						break;
-					case DESIGN:
-						delivered = giveDesignItem(buyer, listing.getCatalogName());
-						break;
-					default:
-						delivered = false;
-				}
+                delivered = switch (kind) {
+                    case ITEM -> giveListingItem(buyer, listing);
+                    case BLUEPRINT -> giveBlueprintItem(buyer, listing.getCatalogName());
+                    case DESIGN -> giveDesignItem(buyer, listing.getCatalogName());
+                };
 			} catch(Exception e) {
 				delivered = false;
 				instance.logException("[Exchange] purchase delivery failed for " + buyer.getName(), e);

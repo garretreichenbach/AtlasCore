@@ -87,64 +87,64 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 			}, ControllerElement.FilterRowStyle.LEFT);
 			switch(type) {
 				case ExchangeData.SHIPS:
-					addDropdownFilter(new GUIListFilterDropdown<ExchangeData, BlueprintClassification>(shipClassifications) {
-						@Override
-						public boolean isOk(BlueprintClassification c, ExchangeData item) {
-							return c == null || item.getClassification() == c;
-						}
-					}, new CreateGUIElementInterface<BlueprintClassification>() {
-						@Override
-						public GUIElement create(BlueprintClassification c) {
-							GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
-							GUITextOverlayTableDropDown d;
-							(d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(c.getName().toUpperCase(Locale.ENGLISH));
-							d.setPos(4.0F, 4.0F, 0.0F);
-							a.setUserPointer(c);
-							a.attach(d);
-							return a;
-						}
+					addDropdownFilter(new GUIListFilterDropdown<>(shipClassifications) {
+                        @Override
+                        public boolean isOk(BlueprintClassification c, ExchangeData item) {
+                            return c == null || item.getClassification() == c;
+                        }
+                    }, new CreateGUIElementInterface<>() {
+                        @Override
+                        public GUIElement create(BlueprintClassification c) {
+                            GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
+                            GUITextOverlayTableDropDown d;
+                            (d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(c.getName().toUpperCase(Locale.ENGLISH));
+                            d.setPos(4.0F, 4.0F, 0.0F);
+                            a.setUserPointer(c);
+                            a.attach(d);
+                            return a;
+                        }
 
-						@Override
-						public GUIElement createNeutral() {
-							GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
-							GUITextOverlayTableDropDown d;
-							(d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(Lng.str("ALL"));
-							d.setPos(4.0F, 4.0F, 0.0F);
-							a.setUserPointer(null);
-							a.attach(d);
-							return a;
-						}
-					}, ControllerElement.FilterRowStyle.RIGHT);
+                        @Override
+                        public GUIElement createNeutral() {
+                            GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
+                            GUITextOverlayTableDropDown d;
+                            (d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(Lng.str("ALL"));
+                            d.setPos(4.0F, 4.0F, 0.0F);
+                            a.setUserPointer(null);
+                            a.attach(d);
+                            return a;
+                        }
+                    }, ControllerElement.FilterRowStyle.RIGHT);
 					break;
 				case ExchangeData.STATIONS:
-					addDropdownFilter(new GUIListFilterDropdown<ExchangeData, BlueprintClassification>(BlueprintClassification.stationValues().toArray(stationClassifications)) {
-						@Override
-						public boolean isOk(BlueprintClassification c, ExchangeData item) {
-							return c == null || item.getClassification() == c;
-						}
-					}, new CreateGUIElementInterface<BlueprintClassification>() {
-						@Override
-						public GUIElement create(BlueprintClassification c) {
-							GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
-							GUITextOverlayTableDropDown d;
-							(d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(c.getName().toUpperCase(Locale.ENGLISH));
-							d.setPos(4.0F, 4.0F, 0.0F);
-							a.setUserPointer(c);
-							a.attach(d);
-							return a;
-						}
+					addDropdownFilter(new GUIListFilterDropdown<>(BlueprintClassification.stationValues().toArray(stationClassifications)) {
+                        @Override
+                        public boolean isOk(BlueprintClassification c, ExchangeData item) {
+                            return c == null || item.getClassification() == c;
+                        }
+                    }, new CreateGUIElementInterface<>() {
+                        @Override
+                        public GUIElement create(BlueprintClassification c) {
+                            GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
+                            GUITextOverlayTableDropDown d;
+                            (d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(c.getName().toUpperCase(Locale.ENGLISH));
+                            d.setPos(4.0F, 4.0F, 0.0F);
+                            a.setUserPointer(c);
+                            a.attach(d);
+                            return a;
+                        }
 
-						@Override
-						public GUIElement createNeutral() {
-							GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
-							GUITextOverlayTableDropDown d;
-							(d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(Lng.str("ALL"));
-							d.setPos(4.0F, 4.0F, 0.0F);
-							a.setUserPointer(null);
-							a.attach(d);
-							return a;
-						}
-					}, ControllerElement.FilterRowStyle.RIGHT);
+                        @Override
+                        public GUIElement createNeutral() {
+                            GUIAncor a = new GUIAncor(getState(), 10.0F, 24.0F);
+                            GUITextOverlayTableDropDown d;
+                            (d = new GUITextOverlayTableDropDown(10, 10, getState())).setTextSimple(Lng.str("ALL"));
+                            d.setPos(4.0F, 4.0F, 0.0F);
+                            a.setUserPointer(null);
+                            a.attach(d);
+                            return a;
+                        }
+                    }, ControllerElement.FilterRowStyle.RIGHT);
 					break;
 			}
 		} else if(type == ExchangeData.ITEMS || type == ExchangeData.WEAPONS) {
@@ -168,18 +168,13 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 
 	@Override
 	protected Collection<ExchangeData> getElementList() {
-		switch(type) {
-			case ExchangeData.SHIPS:
-				return ExchangeDialog.getShipList();
-			case ExchangeData.STATIONS:
-				return ExchangeDialog.getStationList();
-			case ExchangeData.ITEMS:
-				return ExchangeDialog.getItemsList();
-			case ExchangeData.WEAPONS:
-				return ExchangeDialog.getWeaponsList();
-			default:
-				return Collections.emptyList();
-		}
+        return switch (type) {
+            case ExchangeData.SHIPS -> ExchangeDialog.getShipList();
+            case ExchangeData.STATIONS -> ExchangeDialog.getStationList();
+            case ExchangeData.ITEMS -> ExchangeDialog.getItemsList();
+            case ExchangeData.WEAPONS -> ExchangeDialog.getWeaponsList();
+            default -> Collections.emptyList();
+        };
 	}
 
 	@Override

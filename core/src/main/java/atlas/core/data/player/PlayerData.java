@@ -5,12 +5,17 @@ import api.network.PacketReadBuffer;
 import api.network.PacketWriteBuffer;
 import atlas.core.data.SerializableData;
 import com.bulletphysics.linearmath.Transform;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.schema.common.util.linAlg.Vector3i;
 import org.schema.game.common.data.player.PlayerState;
 import org.schema.game.common.data.player.faction.Faction;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * [Description]
@@ -19,13 +24,26 @@ import java.io.IOException;
  */
 public class PlayerData extends SerializableData {
 
-	private static final byte VERSION = 0;
+	private static final byte VERSION = 1;
 
 	private String name = "";
 	private int factionId;
 	private Vector3i lastRealSector = new Vector3i();
 	private Transform lastRealTransform = new Transform();
 	private int pendingExchangeCredits;
+	/**
+	 * UUIDs of contracts this player has actively claimed (AtlasContracts). Persisted to disk only;
+	 * client GUIs derive claim state from the synced {@code ContractData.claimants} map instead.
+	 */
+	private ArrayList<String> contractUUIDs = new ArrayList<>();
+	/**
+	 * AtlasContracts aggression tracking: NPC factionId → kill timestamps (millis). Disk only.
+	 */
+	private HashMap<Integer, List<Long>> aggressionKills = new HashMap<>();
+	/**
+	 * AtlasContracts: NPC factionId → number of auto-bounties placed on this player so far. Disk only.
+	 */
+	private HashMap<Integer, Integer> bountyCounts = new HashMap<>();
 	/**
 	 * UID of the virtual blueprint entity sitting in this player's staging sector, or empty if none.
 	 */
@@ -80,6 +98,21 @@ public class PlayerData extends SerializableData {
 		data.put("pendingExchangeCredits", pendingExchangeCredits);
 		data.put("pendingExchangeDesignUID", pendingExchangeDesignUID);
 		data.put("lastDailyRewardDay", lastDailyRewardDay);
+		JSONArray contractArray = new JSONArray();
+		for(String uuid : contractUUIDs) contractArray.put(uuid);
+		data.put("contractUUIDs", contractArray);
+		JSONObject aggressionJson = new JSONObject();
+		for(Map.Entry<Integer, List<Long>> entry : aggressionKills.entrySet()) {
+			JSONArray timestamps = new JSONArray();
+			for(Long ts : entry.getValue()) timestamps.put(ts);
+			aggressionJson.put(String.valueOf(entry.getKey()), timestamps);
+		}
+		data.put("aggressionKills", aggressionJson);
+		JSONObject bountyJson = new JSONObject();
+		for(Map.Entry<Integer, Integer> entry : bountyCounts.entrySet()) {
+			bountyJson.put(String.valueOf(entry.getKey()), entry.getValue());
+		}
+		data.put("bountyCounts", bountyJson);
 		return data;
 	}
 
@@ -98,6 +131,30 @@ public class PlayerData extends SerializableData {
 		pendingExchangeCredits = data.optInt("pendingExchangeCredits", 0);
 		pendingExchangeDesignUID = data.optString("pendingExchangeDesignUID", "");
 		lastDailyRewardDay = data.optLong("lastDailyRewardDay", -1);
+		contractUUIDs = new ArrayList<>();
+		if(data.has("contractUUIDs")) {
+			JSONArray contractArray = data.getJSONArray("contractUUIDs");
+			for(int i = 0; i < contractArray.length(); i++) contractUUIDs.add(contractArray.getString(i));
+		}
+		aggressionKills = new HashMap<>();
+		if(data.has("aggressionKills")) {
+			JSONObject aggressionJson = data.getJSONObject("aggressionKills");
+			for(Object keyObj : aggressionJson.keySet()) {
+				String key = (String) keyObj;
+				JSONArray timestamps = aggressionJson.getJSONArray(key);
+				List<Long> kills = new ArrayList<>();
+				for(int i = 0; i < timestamps.length(); i++) kills.add(timestamps.getLong(i));
+				aggressionKills.put(Integer.parseInt(key), kills);
+			}
+		}
+		bountyCounts = new HashMap<>();
+		if(data.has("bountyCounts")) {
+			JSONObject bountyJson = data.getJSONObject("bountyCounts");
+			for(Object keyObj : bountyJson.keySet()) {
+				String key = (String) keyObj;
+				bountyCounts.put(Integer.parseInt(key), bountyJson.getInt(key));
+			}
+		}
 	}
 
 	@Override
@@ -219,5 +276,42 @@ public class PlayerData extends SerializableData {
 	 */
 	public void setLastDailyRewardDay(long day) {
 		lastDailyRewardDay = day;
+	}
+
+	// ── AtlasContracts per-player state (disk only) ──────────────────────────────
+
+	/**
+	 * Live, mutable list of contract UUIDs this player has actively claimed. Mutating it does not
+	 * auto-save; callers must {@code updateData} (or use {@link #addContract}/{@link #removeContract}).
+	 */
+	public ArrayList<String> getContracts() {
+		return contractUUIDs;
+	}
+
+	/** Adds a claimed contract UUID and auto-saves when the player is online. */
+	public void addContract(String uuid) {
+		if(!contractUUIDs.contains(uuid)) {
+			contractUUIDs.add(uuid);
+			PlayerState playerState = getPlayerState();
+			if(playerState != null) PlayerDataManager.getInstance(playerState.isOnServer()).updateData(this, playerState.isOnServer());
+		}
+	}
+
+	/** Removes a claimed contract UUID and auto-saves when the player is online. */
+	public void removeContract(String uuid) {
+		if(contractUUIDs.remove(uuid)) {
+			PlayerState playerState = getPlayerState();
+			if(playerState != null) PlayerDataManager.getInstance(playerState.isOnServer()).updateData(this, playerState.isOnServer());
+		}
+	}
+
+	/** Live, mutable aggression map: NPC factionId → kill timestamps. Caller persists via {@code updateData}. */
+	public HashMap<Integer, List<Long>> getAggressionKills() {
+		return aggressionKills;
+	}
+
+	/** Live, mutable bounty-count map: NPC factionId → auto-bounties placed. Caller persists via {@code updateData}. */
+	public HashMap<Integer, Integer> getBountyCounts() {
+		return bountyCounts;
 	}
 }

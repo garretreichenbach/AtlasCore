@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="disc" cx="50%" cy="44%" r="62%">
+      <stop offset="0%" stop-color="#1b2c48"/>
+      <stop offset="60%" stop-color="#101b30"/>
+      <stop offset="100%" stop-color="#070c16"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5aa0e0"/>
+      <stop offset="50%" stop-color="#2f6aa8"/>
+      <stop offset="100%" stop-color="#16365e"/>
+    </linearGradient>
+    <linearGradient id="needleGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe27a"/>
+      <stop offset="100%" stop-color="#d9a425"/>
+    </linearGradient>
+    <radialGradient id="badge" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#13243a"/>
+      <stop offset="100%" stop-color="#0a1322"/>
+    </radialGradient>
+  </defs>
+
+  <!-- rim + disc -->
+  <circle cx="128" cy="128" r="123" fill="url(#disc)" stroke="url(#rim)" stroke-width="6"/>
+  <circle cx="128" cy="128" r="118" fill="none" stroke="#0c1a30" stroke-width="2" opacity="0.8"/>
+  <circle cx="128" cy="128" r="96" fill="none" stroke="#2f5680" stroke-width="1" opacity="0.45"/>
+
+  <!-- diagonal tick marks -->
+  <g stroke="#3a5f8c" stroke-width="2" opacity="0.6">
+    <line x1="128" y1="20" x2="128" y2="34"/>
+    <line x1="128" y1="222" x2="128" y2="236"/>
+    <line x1="20" y1="128" x2="34" y2="128"/>
+    <line x1="222" y1="128" x2="236" y2="128"/>
+    <g transform="rotate(45 128 128)">
+      <line x1="128" y1="30" x2="128" y2="42" opacity="0.7"/>
+      <line x1="128" y1="214" x2="128" y2="226" opacity="0.7"/>
+      <line x1="30" y1="128" x2="42" y2="128" opacity="0.7"/>
+      <line x1="214" y1="128" x2="226" y2="128" opacity="0.7"/>
+    </g>
+  </g>
+
+  <!-- 8-point compass star: short dark diagonals first, then long light cardinals -->
+  <g transform="rotate(45 128 128)" fill="#33415b">
+    <path d="M128 64 L132 128 L128 192 L124 128 Z"/>
+    <path d="M64 128 L128 132 L192 128 L128 124 Z"/>
+  </g>
+  <g fill="#6f8aa8">
+    <path d="M128 34 L134 128 L128 222 L122 128 Z"/>
+    <path d="M34 128 L128 134 L222 128 L128 122 Z"/>
+  </g>
+
+  <!-- needles: gold north, steel south -->
+  <path d="M128 42 L135 128 L121 128 Z" fill="url(#needleGold)"/>
+  <path d="M128 214 L134 128 L122 128 Z" fill="#9fc0e0"/>
+
+  <!-- north label -->
+  <text x="128" y="22" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="bold" fill="#ffd34d">N</text>
+
+  <!-- center badge -->
+  <circle cx="128" cy="128" r="27" fill="url(#badge)" stroke="#2faa6a" stroke-width="4"/>
+
+  <!-- contract glyph: parchment/scroll with text lines and a seal, in emerald accent -->
+  <g stroke="#6fe0a8" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" fill="none">
+    <!-- document body with folded top-right corner -->
+    <path d="M118 114 H134 L139 119 V142 H118 Z" fill="#0f2c22"/>
+    <path d="M134 114 V119 H139"/>
+    <!-- text lines -->
+    <line x1="122" y1="124" x2="135" y2="124"/>
+    <line x1="122" y1="130" x2="135" y2="130"/>
+    <line x1="122" y1="136" x2="131" y2="136"/>
+  </g>
+  <!-- wax seal -->
+  <circle cx="135" cy="139" r="3.4" fill="#ffd34d" stroke="#0a1322" stroke-width="1"/>
+</svg>
