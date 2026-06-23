@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * [Description]
@@ -21,15 +22,27 @@ import java.util.Set;
  */
 public class PlayerDataManager extends DataManager<PlayerData> {
 
-	private final Set<PlayerData> clientCache = new HashSet<>();
-	private static PlayerDataManager instance;
+	// Weakly-consistent set: iterated on the graphics thread while packets mutate it
+	// on the network thread, so it must not throw ConcurrentModificationException.
+	private final Set<PlayerData> clientCache = ConcurrentHashMap.newKeySet();
+	private static PlayerDataManager serverInstance;
+	private static PlayerDataManager clientInstance;
 
 	public static PlayerDataManager getInstance(boolean server) {
-		if(instance == null) {
-			instance = new PlayerDataManager();
-			if(!server) instance.requestFromServer();
+		// Separate client/server singletons so the client always issues its initial
+		// sync request regardless of which side first touched the manager. The old
+		// single shared instance skipped requestFromServer() whenever the server
+		// initialised it first, leaving client GUIs permanently empty.
+		if(server) {
+			if(serverInstance == null) serverInstance = new PlayerDataManager();
+			return serverInstance;
+		} else {
+			if(clientInstance == null) {
+				clientInstance = new PlayerDataManager();
+				clientInstance.requestFromServer();
+			}
+			return clientInstance;
 		}
-		return instance;
 	}
 
 	@Override

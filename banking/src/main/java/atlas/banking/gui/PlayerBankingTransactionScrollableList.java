@@ -30,6 +30,7 @@ public class PlayerBankingTransactionScrollableList extends ScrollableTableList<
 
 	@Override
 	protected Collection<BankingData.BankTransactionData> getElementList() {
+		if(bankingData == null) return Collections.emptyList();
 		return Collections.unmodifiableCollection(bankingData.getTransactionHistory());
 	}
 

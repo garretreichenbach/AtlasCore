@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class ExchangeDataManager extends DataManager<ExchangeData> {
 
-    private final Set<ExchangeData> clientCache = new HashSet<>();
+    private final Set<ExchangeData> clientCache = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static ExchangeDataManager serverInstance;
     private static ExchangeDataManager clientInstance;
 

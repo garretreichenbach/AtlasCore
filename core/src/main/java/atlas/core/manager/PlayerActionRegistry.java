@@ -3,8 +3,8 @@ package atlas.core.manager;
 import atlas.core.AtlasCore;
 import org.schema.game.common.data.player.PlayerState;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry for player action handlers. Replaces the old hardcoded
@@ -13,9 +13,19 @@ import java.util.Map;
  *
  * <p>Usage — in a sub-mod's {@code onAtlasCoreReady()}:
  * <pre>
- *   public static final int MY_ACTION = PlayerActionRegistry.register((args, sender) -> { ... });
+ *   public static final String MY_ACTION =
+ *       PlayerActionRegistry.register("atlas_mymod:my_action", (args, sender) -> { ... });
  * </pre>
  * Then send {@code new PlayerActionCommandPacket(MY_ACTION, ...)} to trigger it.
+ *
+ * <p><b>Why a String key, not an int</b>: action keys are sent over the wire and
+ * looked up on the receiving side. The old design handed out sequential int ids
+ * ({@code nextId++}) in sub-mod registration order, so the same int meant
+ * different actions on a client and server whenever their installed module set or
+ * load order differed (which is explicitly supported — modules are independently
+ * installable). That silently dispatched the wrong handler. A stable string key
+ * is resolved by identity, so it is correct regardless of which modules are
+ * present or in what order they registered.
  *
  * <p><b>Security note</b>: when an action is processed server-side, {@code sender}
  * is the authenticated {@link PlayerState} of the player who sent the packet.
@@ -28,21 +38,26 @@ import java.util.Map;
  */
 public final class PlayerActionRegistry {
 
-	private static final Map<Integer, ActionHandler> handlers = new HashMap<>();
-	private static int nextId;
+	private static final Map<String, ActionHandler> handlers = new ConcurrentHashMap<>();
 
 	private PlayerActionRegistry() {
 	}
 
 	/**
-	 * Registers an action handler and returns the integer type ID that should be
-	 * stored as a constant and passed to {@code PlayerActionCommandPacket}.
+	 * Registers an action handler under a stable string key and returns that key,
+	 * so callers can store it as a constant and pass it to
+	 * {@code PlayerActionCommandPacket}.
+	 *
+	 * @param key a stable, globally-unique key (convention: {@code "modId:action"}).
+	 *            Must be identical on client and server for the action to dispatch.
+	 * @throws IllegalArgumentException if {@code key} is null/empty or already registered.
 	 */
-	public static int register(ActionHandler handler) {
-		int id = nextId;
-		nextId++;
-		handlers.put(id, handler);
-		return id;
+	public static String register(String key, ActionHandler handler) {
+		if(key == null || key.isEmpty()) throw new IllegalArgumentException("Action key must be non-empty");
+		if(handler == null) throw new IllegalArgumentException("Action handler must be non-null");
+		ActionHandler previous = handlers.putIfAbsent(key, handler);
+		if(previous != null) throw new IllegalArgumentException("Duplicate player action key: " + key);
+		return key;
 	}
 
 	/**
@@ -50,7 +65,7 @@ public final class PlayerActionRegistry {
 	 *
 	 * @param sender {@code null} on the client, non-null on the server.
 	 */
-	public static void process(int type, String[] args, PlayerState sender) {
+	public static void process(String type, String[] args, PlayerState sender) {
 		ActionHandler handler = handlers.get(type);
 		if(handler != null) {
 			handler.process(args, sender);

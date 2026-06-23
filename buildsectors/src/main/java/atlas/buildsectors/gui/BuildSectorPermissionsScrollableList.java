@@ -1,7 +1,10 @@
 package atlas.buildsectors.gui;
 
 import api.common.GameClient;
+import api.network.packets.PacketUtil;
+import atlas.buildsectors.AtlasBuildSectors;
 import atlas.buildsectors.data.BuildSectorData;
+import atlas.core.network.PlayerActionCommandPacket;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.*;
@@ -84,21 +87,18 @@ public class BuildSectorPermissionsScrollableList extends ScrollableTableList<Pa
 
 	@Override
 	protected Collection<Pair<BuildSectorData.PermissionTypes, Boolean>> getElementList() {
-		if(entityUID != null) {
-			HashMap<BuildSectorData.PermissionTypes, Boolean> permissions = buildSectorData.getPermissionsForEntity(entityUID, username);
-			Set<Pair<BuildSectorData.PermissionTypes, Boolean>> permissionSet = new HashSet<>();
+		if(buildSectorData == null) return Collections.emptySet();
+		HashMap<BuildSectorData.PermissionTypes, Boolean> permissions = (entityUID != null)
+			? buildSectorData.getPermissionsForEntity(entityUID, username)
+			: buildSectorData.getPermissionsForUser(username);
+		Set<Pair<BuildSectorData.PermissionTypes, Boolean>> permissionSet = new HashSet<>();
+		// Both getters return null when the user has no permission map yet — guard before iterating.
+		if(permissions != null) {
 			for(Map.Entry<BuildSectorData.PermissionTypes, Boolean> entry : permissions.entrySet()) {
 				permissionSet.add(new Pair<>(entry.getKey(), entry.getValue()));
 			}
-			return permissionSet;
-		} else {
-			HashMap<BuildSectorData.PermissionTypes, Boolean> permissions = buildSectorData.getPermissionsForUser(username);
-			Set<Pair<BuildSectorData.PermissionTypes, Boolean>> permissionSet = new HashSet<>();
-			for(Map.Entry<BuildSectorData.PermissionTypes, Boolean> entry : permissions.entrySet()) {
-				permissionSet.add(new Pair<>(entry.getKey(), entry.getValue()));
-			}
-			return permissionSet;
 		}
+		return permissionSet;
 	}
 
 	@Override
@@ -122,9 +122,7 @@ public class BuildSectorPermissionsScrollableList extends ScrollableTableList<Pa
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
-						if(entityUID != null)
-							buildSectorData.setPermissionForEntity(entityUID, username, permission.first(), true, false);
-						else buildSectorData.setPermission(username, permission.first(), true, false);
+						sendSetPermission(permission.first(), true);
 						flagDirty();
 					}
 				}
@@ -133,10 +131,7 @@ public class BuildSectorPermissionsScrollableList extends ScrollableTableList<Pa
 				public boolean isOccluded() {
 					if(!getState().getController().getPlayerInputs().isEmpty() && !getState().getController().getPlayerInputs().contains(getDialog()))
 						return true;
-					if(entityUID != null)
-						return !buildSectorData.getPermissionForEntityOrGlobal(username, entityUID, BuildSectorData.PermissionTypes.EDIT_ENTITY_PERMISSIONS);
-					else if(buildSectorData.getOwner().equals(GameClient.getClientPlayerState().getName())) return true;
-					return !buildSectorData.getPermission(username, BuildSectorData.PermissionTypes.EDIT_PERMISSIONS);
+					return !canEditPermissions();
 				}
 			}, new GUIActivationCallback() {
 				@Override
@@ -146,20 +141,14 @@ public class BuildSectorPermissionsScrollableList extends ScrollableTableList<Pa
 
 				@Override
 				public boolean isActive(InputState inputState) {
-					if(entityUID != null)
-						return buildSectorData.getPermissionForEntityOrGlobal(username, entityUID, BuildSectorData.PermissionTypes.EDIT_ENTITY_PERMISSIONS);
-					else if(buildSectorData.getOwner().equals(GameClient.getClientPlayerState().getName()))
-						return false;
-					return buildSectorData.getPermission(username, BuildSectorData.PermissionTypes.EDIT_PERMISSIONS);
+					return canEditPermissions();
 				}
 			});
 			buttonPane.addButton(1, 0, "SET FALSE", GUIHorizontalArea.HButtonColor.RED, new GUICallback() {
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
-						if(entityUID != null)
-							buildSectorData.setPermissionForEntity(entityUID, username, permission.first(), false, false);
-						else buildSectorData.setPermission(username, permission.first(), false, false);
+						sendSetPermission(permission.first(), false);
 						flagDirty();
 					}
 				}
@@ -168,10 +157,7 @@ public class BuildSectorPermissionsScrollableList extends ScrollableTableList<Pa
 				public boolean isOccluded() {
 					if(!getState().getController().getPlayerInputs().isEmpty() && !getState().getController().getPlayerInputs().contains(getDialog()))
 						return true;
-					if(entityUID != null)
-						return !buildSectorData.getPermissionForEntityOrGlobal(username, entityUID, BuildSectorData.PermissionTypes.EDIT_ENTITY_PERMISSIONS);
-					else if(buildSectorData.getOwner().equals(GameClient.getClientPlayerState().getName())) return true;
-					return !buildSectorData.getPermission(username, BuildSectorData.PermissionTypes.EDIT_PERMISSIONS);
+					return !canEditPermissions();
 				}
 			}, new GUIActivationCallback() {
 				@Override
@@ -181,11 +167,7 @@ public class BuildSectorPermissionsScrollableList extends ScrollableTableList<Pa
 
 				@Override
 				public boolean isActive(InputState inputState) {
-					if(entityUID != null)
-						return buildSectorData.getPermissionForEntityOrGlobal(username, entityUID, BuildSectorData.PermissionTypes.EDIT_ENTITY_PERMISSIONS);
-					else if(buildSectorData.getOwner().equals(GameClient.getClientPlayerState().getName()))
-						return false;
-					return buildSectorData.getPermission(username, BuildSectorData.PermissionTypes.EDIT_PERMISSIONS);
+					return canEditPermissions();
 				}
 			});
 			anchor.attach(buttonPane);
@@ -199,6 +181,37 @@ public class BuildSectorPermissionsScrollableList extends ScrollableTableList<Pa
 
 	private BuildSectorDialog getDialog() {
 		return BuildSectorDialog.getInstance();
+	}
+
+	/**
+	 * Whether the <em>current client</em> (the editor, not the user being edited) may
+	 * change permissions here. Mirrors the server-side authorisation check so the
+	 * buttons are only shown when the action would actually succeed.
+	 */
+	private boolean canEditPermissions() {
+		String editor = GameClient.getClientPlayerState().getName();
+		if(buildSectorData.getOwner().equals(editor)) return true;
+		BuildSectorData.PermissionTypes required = (entityUID != null)
+			? BuildSectorData.PermissionTypes.EDIT_ENTITY_PERMISSIONS
+			: BuildSectorData.PermissionTypes.EDIT_PERMISSIONS;
+		return buildSectorData.getPermission(editor, required);
+	}
+
+	/**
+	 * Sends the permission change to the server, which re-validates the sender's
+	 * authority, persists it, and replicates to all clients. The client no longer
+	 * mutates its own cache directly (that change never persisted on multiplayer).
+	 */
+	private void sendSetPermission(BuildSectorData.PermissionTypes type, boolean value) {
+		if(entityUID != null) {
+			PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+				AtlasBuildSectors.SET_ENTITY_PERMISSION,
+				buildSectorData.getUUID(), entityUID, username, type.name(), String.valueOf(value)));
+		} else {
+			PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+				AtlasBuildSectors.SET_PERMISSION,
+				buildSectorData.getUUID(), username, type.name(), String.valueOf(value)));
+		}
 	}
 
 	public class BuildSectorPermissionsScrollableListRow extends ScrollableTableList<Pair<BuildSectorData.PermissionTypes, Boolean>>.Row {

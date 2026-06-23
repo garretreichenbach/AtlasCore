@@ -30,6 +30,11 @@ public class PlayerData extends SerializableData {
 	 * UID of the virtual blueprint entity sitting in this player's staging sector, or empty if none.
 	 */
 	private String pendingExchangeDesignUID = "";
+	/**
+	 * UTC epoch-day ({@code millis / 86_400_000}) on which this player last received
+	 * their daily login reward. {@code -1} means never. Persisted to disk only.
+	 */
+	private long lastDailyRewardDay = -1;
 
 	public PlayerData(String name, int factionId, Vector3i lastRealSector, Transform lastRealTransform) {
 		super("PLAYER_DATA");
@@ -74,6 +79,7 @@ public class PlayerData extends SerializableData {
 		data.put("lastRealTransform", lastRealTransformData);
 		data.put("pendingExchangeCredits", pendingExchangeCredits);
 		data.put("pendingExchangeDesignUID", pendingExchangeDesignUID);
+		data.put("lastDailyRewardDay", lastDailyRewardDay);
 		return data;
 	}
 
@@ -91,6 +97,7 @@ public class PlayerData extends SerializableData {
 		lastRealTransform.origin.set((float) lastRealTransformOrigin.getDouble("x"), (float) lastRealTransformOrigin.getDouble("y"), (float) lastRealTransformOrigin.getDouble("z"));
 		pendingExchangeCredits = data.optInt("pendingExchangeCredits", 0);
 		pendingExchangeDesignUID = data.optString("pendingExchangeDesignUID", "");
+		lastDailyRewardDay = data.optLong("lastDailyRewardDay", -1);
 	}
 
 	@Override
@@ -147,7 +154,8 @@ public class PlayerData extends SerializableData {
 	}
 
 	public String getFactionName() {
-		return getPlayerState().getFactionName();
+		PlayerState playerState = getPlayerState();
+		return playerState != null ? playerState.getFactionName() : "";
 	}
 
 	public Vector3i getLastRealSector() {
@@ -156,7 +164,8 @@ public class PlayerData extends SerializableData {
 
 	public void setLastRealSector(Vector3i sector) {
 		lastRealSector.set(sector);
-		PlayerDataManager.getInstance(getPlayerState().isOnServer()).updateData(this, getPlayerState().isOnServer());
+		PlayerState playerState = getPlayerState();
+		if(playerState != null) PlayerDataManager.getInstance(playerState.isOnServer()).updateData(this, playerState.isOnServer());
 	}
 
 	public Transform getLastRealTransform() {
@@ -165,7 +174,8 @@ public class PlayerData extends SerializableData {
 
 	public void setLastRealTransform(Transform transform) {
 		lastRealTransform.set(transform);
-		PlayerDataManager.getInstance(getPlayerState().isOnServer()).updateData(this, getPlayerState().isOnServer());
+		PlayerState playerState = getPlayerState();
+		if(playerState != null) PlayerDataManager.getInstance(playerState.isOnServer()).updateData(this, playerState.isOnServer());
 	}
 
 	/**
@@ -195,5 +205,19 @@ public class PlayerData extends SerializableData {
 	 */
 	public void setPendingExchangeDesignUID(String uid) {
 		pendingExchangeDesignUID = (uid != null) ? uid : "";
+	}
+
+	/**
+	 * UTC epoch-day on which the player last received their daily login reward, or {@code -1} if never.
+	 */
+	public long getLastDailyRewardDay() {
+		return lastDailyRewardDay;
+	}
+
+	/**
+	 * Sets the last daily-reward day without auto-saving; caller must call {@code updateData} explicitly.
+	 */
+	public void setLastDailyRewardDay(long day) {
+		lastDailyRewardDay = day;
 	}
 }

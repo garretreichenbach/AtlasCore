@@ -1,8 +1,11 @@
 package atlas.exchange;
 
 import api.config.BlockConfig;
+import api.listener.Listener;
 import api.listener.events.controller.ClientInitializeEvent;
+import api.listener.events.input.KeyPressEvent;
 import api.listener.events.player.PlayerSpawnEvent;
+import api.mod.StarLoader;
 import api.mod.StarMod;
 import api.utils.element.Blocks;
 import api.utils.game.inventory.InventoryUtils;
@@ -10,7 +13,6 @@ import api.utils.textures.StarLoaderTexture;
 import atlas.core.api.IAtlasSubMod;
 import atlas.core.api.SubModRegistry;
 import atlas.core.data.DataTypeRegistry;
-import atlas.core.data.misc.ControlBindingData;
 import atlas.core.data.player.PlayerData;
 import atlas.core.data.player.PlayerDataManager;
 import atlas.core.manager.PlayerActionRegistry;
@@ -39,11 +41,14 @@ import org.schema.game.server.data.blueprint.ChildStats;
 import org.schema.game.server.data.blueprint.SegmentControllerOutline;
 import org.schema.game.server.data.blueprint.SegmentControllerSpawnCallbackDirect;
 import org.schema.game.server.test.TestRegistry;
+import org.schema.schine.graphicsengine.core.GLFW;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.GUIActivationHighlightCallback;
 import org.schema.schine.graphicsengine.forms.gui.GUICallback;
 import org.schema.schine.graphicsengine.forms.gui.GUIElement;
 import org.schema.schine.input.InputState;
+import org.schema.schine.input.KeyboardContext;
+import org.schema.schine.input.KeyboardMappings;
 import org.schema.schine.network.server.ServerMessage;
 
 import java.util.ArrayList;
@@ -66,27 +71,38 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 		return t;
 	});
 	/**
-	 * Gives a plain item to the authenticated sender (server-side).
+	 * Serializes the buy transaction so concurrent / rapid purchases cannot
+	 * double-spend (deduct + give + credit must be atomic per the whole exchange).
 	 */
-	public static int GIVE_ITEM = -1;
+	private static final Object EXCHANGE_LOCK = new Object();
 	/**
-	 * Credits Gold Bars to a named player (server-side).
+	 * Purchases an ITEM/WEAPON listing: deducts Gold Bars and gives the listed item.
+	 * args: [listingUUID]. All price/item/seller data comes from the server-side listing.
 	 */
-	public static int ADD_BARS = -1;
+	public static String BUY_ITEM;
 	/**
 	 * Purchases a blueprint listing: deducts Gold Bars from buyer, gives an
 	 * empty {@link BlueprintMetaItem} (goal filled, progress empty), and
-	 * credits the seller. Replaces the old client-side directBuy spawn.
+	 * credits the seller. args: [listingUUID].
 	 */
-	public static int BUY_BLUEPRINT = -1;
+	public static String BUY_BLUEPRINT;
 	/**
-	 * Purchases a blueprint listing as a shipyard design item.
-	 * Same transaction as {@link #BUY_BLUEPRINT} but gives a
-	 * {@link VirtualBlueprintMetaItem} so the buyer can load it into a
-	 * shipyard directly via LOAD_DESIGN.
+	 * Purchases a blueprint listing as a shipyard design item. args: [listingUUID].
 	 */
-	public static int BUY_DESIGN = -1;
+	public static String BUY_DESIGN;
+	/**
+	 * Creates a marketplace listing. args: [serializedExchangeDataJSON].
+	 * The server forces {@code producer = sender}, clamps price/count, and
+	 * requires the sender to be in a faction or be an admin.
+	 */
+	public static String ADD_LISTING;
+	/**
+	 * Removes a marketplace listing. args: [listingUUID]. Only the listing's
+	 * producer or an admin may remove it.
+	 */
+	public static String REMOVE_LISTING;
 	private static AtlasExchange instance;
+	private KeyboardMappings openExchangeKey;
 
 	public AtlasExchange() {
 		instance = this;
@@ -103,12 +119,27 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	 * then deducts the Gold Bars. Returns false (and takes no action) on failure.
 	 */
 	private static boolean validateAndDeduct(PlayerState buyer, ExchangeData listing) {
+		if(listing.getPrice() <= 0) return false; // invalid/listing-manipulated price
 		if(!buyer.getInventory().hasFreeSlot()) return false;
 		short goldBarId = Blocks.GOLD_BAR.getId();
-		if(goldBarId != -1) {
-			if(InventoryUtils.getItemAmount(buyer.getInventory(), goldBarId) < listing.getPrice()) return false;
-			InventoryUtils.consumeItems(buyer.getInventory(), goldBarId, listing.getPrice());
-		}
+		// If the currency block is unavailable we must NOT hand out the item for free.
+		if(goldBarId == -1) return false;
+		if(InventoryUtils.getItemAmount(buyer.getInventory(), goldBarId) < listing.getPrice()) return false;
+		InventoryUtils.consumeItems(buyer.getInventory(), goldBarId, listing.getPrice());
+		return true;
+	}
+
+	/** Refunds {@code price} Gold Bars to the buyer when a purchase fails after deduction. */
+	private static void refundGoldBars(PlayerState buyer, int price) {
+		short goldBarId = Blocks.GOLD_BAR.getId();
+		if(goldBarId != -1 && price > 0) InventoryUtils.addItem(buyer.getInventory(), goldBarId, price);
+	}
+
+	/** Gives the buyer the item/weapon described by the server-side listing. */
+	private static boolean giveListingItem(PlayerState buyer, ExchangeData listing) {
+		int count = (listing.getCategory() == ExchangeData.ExchangeDataCategory.WEAPON) ? 1 : listing.getItemCount();
+		if(count <= 0) return false;
+		InventoryUtils.addItem(buyer.getInventory(), listing.getItemId(), count);
 		return true;
 	}
 
@@ -120,7 +151,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	 * block requirements from the catalog. {@code progress} is intentionally
 	 * left empty — the buyer must gather the required materials themselves.</p>
 	 */
-	private static void giveBlueprintItem(PlayerState buyer, String catalogName) {
+	private static boolean giveBlueprintItem(PlayerState buyer, String catalogName) {
 		BlueprintMetaItem meta = (BlueprintMetaItem) MetaObjectManager.instantiate(MetaObjectManager.MetaObjectType.BLUEPRINT.type, (short) -1, true);
 		meta.blueprintName = catalogName;
 		if(meta.goal == null) meta.goal = new ElementCountMap();
@@ -129,10 +160,11 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 		try {
 			slot = buyer.getInventory().getFreeSlot();
 		} catch(NoSlotFreeException e) {
-			throw new RuntimeException(e);
+			return false; // caller refunds
 		}
 		buyer.getInventory().put(slot, meta);
 		buyer.getInventory().sendInventoryModification(slot);
+		return true;
 	}
 
 	/**
@@ -161,7 +193,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	 * The player's current valid design (tracked in {@link PlayerData}) is always
 	 * skipped during cleanup so it cannot be accidentally invalidated.</p>
 	 */
-	private static void giveDesignItem(PlayerState buyer, String catalogName) {
+	private static boolean giveDesignItem(PlayerState buyer, String catalogName) {
 		String playerName = buyer.getName();
 		try {
 			Vector3i stagingPos = getStagingSector(playerName);
@@ -190,7 +222,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 			SegmentControllerOutline<?> outline = BluePrintController.active.loadBluePrint(GameServerState.instance, catalogName, spawnName, tr, -1, 0, stagingPos, playerName, PlayerState.buffer, null, false, new ChildStats(false));
 			if(outline == null) {
 				buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] Failed to load blueprint for design."}, ServerMessage.MESSAGE_TYPE_ERROR));
-				return;
+				return false;
 			}
 			SegmentController entity = outline.spawn(stagingPos, false, new ChildStats(false), new SegmentControllerSpawnCallbackDirect(GameServerState.instance, stagingPos) {
 				@Override
@@ -199,7 +231,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 			});
 			if(entity == null) {
 				buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] Failed to create design entity."}, ServerMessage.MESSAGE_TYPE_ERROR));
-				return;
+				return false;
 			}
 
 			// Mark virtual, persist to DB, then remove from the active sector.
@@ -220,7 +252,7 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 				slot = buyer.getInventory().getFreeSlot();
 			} catch(NoSlotFreeException ex) {
 				buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] No free inventory slot — design was saved. Contact an admin to recover."}, ServerMessage.MESSAGE_TYPE_ERROR));
-				return;
+				return false;
 			}
 			buyer.getInventory().put(slot, meta);
 			buyer.getInventory().sendInventoryModification(slot);
@@ -230,9 +262,11 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 				playerData.setPendingExchangeDesignUID(entity.getUniqueIdentifier());
 				pdm.updateData(playerData, true);
 			}
+			return true;
 		} catch(Exception e) {
 			instance.logException("[Exchange] Failed to create design item for " + playerName, e);
 			buyer.sendServerMessage(new ServerMessage(new Object[]{"[Exchange] An error occurred creating your design. Please contact an admin."}, ServerMessage.MESSAGE_TYPE_ERROR));
+			return false;
 		}
 	}
 
@@ -310,8 +344,15 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 
 	@Override
 	public void onClientCreated(ClientInitializeEvent event) {
-		ControlBindingData.load(this);
-		ControlBindingData.registerBinding(this, "Open Exchange Menu", "Opens the Exchange menu.", 74 /* J */);
+		// Registered through StarMade's official keybinding API; appears in the
+		// in-game controls menu and is player-remappable.
+		openExchangeKey = KeyboardMappings.registerMapping(this, "Open Exchange Menu", GLFW.GLFW_KEY_J, KeyboardContext.GENERAL);
+		StarLoader.registerListener(KeyPressEvent.class, new Listener<KeyPressEvent>() {
+			@Override
+			public void onEvent(KeyPressEvent keyEvent) {
+				if(keyEvent.isKeyDown() && keyEvent.isMapping(openExchangeKey)) openExchange();
+			}
+		}, this);
 	}
 
 	@Override
@@ -367,11 +408,6 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	}
 
 	@Override
-	public void onKeyPress(String bindingName) {
-		if("Open Exchange Menu".equals(bindingName)) openExchange();
-	}
-
-	@Override
 	public void onDisable() {
 		retryScheduler.shutdownNow();
 	}
@@ -380,51 +416,106 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 	public void onAtlasCoreReady() {
 		registerExchangeDataType();
 
-		GIVE_ITEM = PlayerActionRegistry.register((args, sender) -> {
-			// Server-only. args: [itemId, count, meta]
-			if(sender == null || args.length < 3) return;
-			short itemId;
-			int count;
-			try {
-				itemId = Short.parseShort(args[0]);
-				count = Integer.parseInt(args[1]);
-			} catch(NumberFormatException e) {
+		BUY_ITEM = PlayerActionRegistry.register("atlas_exchange:buy_item", (args, sender) -> {
+			if(sender == null || args.length < 1) return;
+			handleBuy(sender, args[0], BuyKind.ITEM);
+		});
+
+		BUY_BLUEPRINT = PlayerActionRegistry.register("atlas_exchange:buy_blueprint", (args, sender) -> {
+			if(sender == null || args.length < 1) return;
+			handleBuy(sender, args[0], BuyKind.BLUEPRINT);
+		});
+
+		BUY_DESIGN = PlayerActionRegistry.register("atlas_exchange:buy_design", (args, sender) -> {
+			if(sender == null || args.length < 1) return;
+			handleBuy(sender, args[0], BuyKind.DESIGN);
+		});
+
+		ADD_LISTING = PlayerActionRegistry.register("atlas_exchange:add_listing", (args, sender) -> {
+			// Server-only. args: [serializedExchangeDataJSON].
+			if(sender == null || args.length < 1) return;
+			// Authorisation mirrors the client gate: faction member or admin.
+			if(sender.getFactionId() == 0 && !sender.isAdmin()) {
+				logWarning("[Exchange] ADD_LISTING: " + sender.getName() + " is not in a faction and not admin");
 				return;
 			}
-			InventoryUtils.addItem(sender.getInventory(), itemId, count);
-		});
-
-		ADD_BARS = PlayerActionRegistry.register((args, sender) -> {
-			// Server-only. args: [sellerName, amount]
-			if(sender == null || args.length < 2) return;
-			int amount;
+			ExchangeData listing;
 			try {
-				amount = Integer.parseInt(args[1]);
-			} catch(NumberFormatException e) {
+				listing = new ExchangeData(new org.json.JSONObject(args[0]));
+			} catch(Exception e) {
+				logWarning("[Exchange] ADD_LISTING: malformed listing data from " + sender.getName());
 				return;
 			}
-			creditSeller(args[0], amount);
+			// Sanitize client-supplied fields: the seller is always the sender, and
+			// price/count are clamped so listings can't be manipulated.
+			listing.setProducer(sender.getName());
+			if(listing.getPrice() < 1) listing.setPrice(1);
+			if((listing.getCategory() == ExchangeData.ExchangeDataCategory.ITEM
+				|| listing.getCategory() == ExchangeData.ExchangeDataCategory.WEAPON)
+				&& listing.getItemCount() < 1) listing.setItemCount(1);
+			if(listing.getName() == null || listing.getName().trim().isEmpty()) return;
+			ExchangeDataManager mgr = ExchangeDataManager.getInstance(true);
+			for(ExchangeData existing : mgr.getServerCache()) {
+				if(existing.getName().equalsIgnoreCase(listing.getName())) {
+					logWarning("[Exchange] ADD_LISTING: duplicate name '" + listing.getName() + "'");
+					return;
+				}
+			}
+			mgr.addData(listing, true);
 		});
 
-		BUY_BLUEPRINT = PlayerActionRegistry.register((args, sender) -> {
-			// Server-only. args: [catalogName, sellerName]
-			if(sender == null || args.length < 2) return;
-			ExchangeData listing = ExchangeDataManager.getInstance(true).findByCatalogName(args[0]);
+		REMOVE_LISTING = PlayerActionRegistry.register("atlas_exchange:remove_listing", (args, sender) -> {
+			// Server-only. args: [listingUUID]. Only the producer or an admin may remove.
+			if(sender == null || args.length < 1) return;
+			ExchangeDataManager mgr = ExchangeDataManager.getInstance(true);
+			ExchangeData listing = mgr.getFromUUID(args[0], true);
 			if(listing == null) return;
-			if(!validateAndDeduct(sender, listing)) return;
-			giveBlueprintItem(sender, args[0]);
-			creditSeller(args[1], listing.getPrice());
+			if(!sender.isAdmin() && !listing.getProducer().equals(sender.getName())) {
+				logWarning("[Exchange] REMOVE_LISTING: " + sender.getName() + " may not remove listing owned by " + listing.getProducer());
+				return;
+			}
+			mgr.removeData(listing, true);
 		});
+	}
 
-		BUY_DESIGN = PlayerActionRegistry.register((args, sender) -> {
-			// Server-only. args: [catalogName, sellerName]
-			if(sender == null || args.length < 2) return;
-			ExchangeData listing = ExchangeDataManager.getInstance(true).findByCatalogName(args[0]);
+	private enum BuyKind {ITEM, BLUEPRINT, DESIGN}
+
+	/**
+	 * Executes a purchase atomically: resolve the listing by UUID (server-authoritative),
+	 * deduct payment, deliver the goods, and credit the seller — refunding if delivery
+	 * fails. Synchronized so concurrent/rapid purchases cannot double-spend.
+	 */
+	private static void handleBuy(PlayerState buyer, String listingUUID, BuyKind kind) {
+		synchronized(EXCHANGE_LOCK) {
+			ExchangeData listing = ExchangeDataManager.getInstance(true).getFromUUID(listingUUID, true);
 			if(listing == null) return;
-			if(!validateAndDeduct(sender, listing)) return;
-			giveDesignItem(sender, args[0]);
-			creditSeller(args[1], listing.getPrice());
-		});
+			if(!validateAndDeduct(buyer, listing)) return;
+			boolean delivered;
+			try {
+				switch(kind) {
+					case ITEM:
+						delivered = giveListingItem(buyer, listing);
+						break;
+					case BLUEPRINT:
+						delivered = giveBlueprintItem(buyer, listing.getCatalogName());
+						break;
+					case DESIGN:
+						delivered = giveDesignItem(buyer, listing.getCatalogName());
+						break;
+					default:
+						delivered = false;
+				}
+			} catch(Exception e) {
+				delivered = false;
+				instance.logException("[Exchange] purchase delivery failed for " + buyer.getName(), e);
+			}
+			if(!delivered) {
+				refundGoldBars(buyer, listing.getPrice());
+				return;
+			}
+			// Seller is the listing's producer — never a client-supplied argument.
+			creditSeller(listing.getProducer(), listing.getPrice());
+		}
 	}
 
 	@Override
@@ -432,9 +523,33 @@ public class AtlasExchange extends StarMod implements IAtlasSubMod {
 		if(event.getPlayer().isOnServer()) {
 			PlayerState player = event.getPlayer().getOwnerState();
 			ExchangeDataManager.getInstance(true).sendAllDataToPlayer(player);
-			// Deliver any Gold Bars that were queued while the player was offline.
+			// Grant the daily login reward (no-op if already claimed today), then
+			// deliver any Gold Bars queued while the player was offline.
+			grantDailyReward(player);
 			attemptPendingCredit(player);
 		}
+	}
+
+	/**
+	 * Grants a once-per-day login reward of 1–3 Gold Bars. Tracked per player by
+	 * UTC epoch-day in {@link PlayerData}, so it fires only on the first spawn of a
+	 * new day (respawns after death don't re-trigger it). Delivery reuses the
+	 * pending-credit system, which handles a full inventory gracefully.
+	 *
+	 * <p>This is a placeholder economy faucet until a proper contract/mission system exists.</p>
+	 */
+	private static void grantDailyReward(PlayerState player) {
+		if(Blocks.GOLD_BAR.getId() == -1) return;
+		PlayerDataManager pdm = PlayerDataManager.getInstance(true);
+		PlayerData data = pdm.getFromName(player.getName(), true);
+		if(data == null) return;
+		long today = System.currentTimeMillis() / 86_400_000L; // UTC epoch-day
+		if(data.getLastDailyRewardDay() == today) return; // already claimed today
+		int reward = java.util.concurrent.ThreadLocalRandom.current().nextInt(1, 4); // 1..3
+		data.setLastDailyRewardDay(today);
+		pdm.updateData(data, true);
+		creditSeller(player.getName(), reward); // queue + deliver via the pending-credit path
+		player.sendServerMessage(new ServerMessage(new Object[]{"Daily login reward: " + reward + " Gold Bar(s)! Spend them on the Exchange."}, ServerMessage.MESSAGE_TYPE_INFO));
 	}
 
 	private void registerExchangeDataType() {

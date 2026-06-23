@@ -1,43 +1,15 @@
 // Root build.gradle — shared conventions for all Atlas sub-projects
 
-def configuredStarmadeRoot = (project.findProperty("starmade_root") ?: "").toString().trim()
-def autoPreparedStarmadeRoot = layout.projectDirectory.dir('.ci/starmade/StarMade').asFile.absolutePath + File.separator
-def useAutoPreparedStarmadeRoot = configuredStarmadeRoot.isEmpty() || configuredStarmadeRoot == 'STARMADE_PATH'
-def starmadeDirectory = useAutoPreparedStarmadeRoot ? autoPreparedStarmadeRoot : configuredStarmadeRoot
-
-tasks.register('prepareStarmadeCompileDependencies', Exec) {
-    group = 'build setup'
-    description = 'Downloads and stages StarMade compile dependencies under .ci/starmade/StarMade/.'
-
-    commandLine 'bash', '.github/scripts/prepare_starmade.sh'
-    environment 'WORK_ROOT', layout.projectDirectory.dir('.ci/starmade').asFile.absolutePath
-
-    def starmadeBuildUrl = (project.findProperty('starmade_build_url') ?: '').toString().trim()
-    if (!starmadeBuildUrl.isEmpty()) {
-        environment 'STARMADE_BUILD_URL', starmadeBuildUrl
-    }
-
-    outputs.file(layout.projectDirectory.file('.ci/starmade/StarMade/StarMade.jar'))
-    outputs.dir(layout.projectDirectory.dir('.ci/starmade/StarMade/lib'))
-}
+def smDir = (project.findProperty('starmade_root') ?: '').toString().trim() + File.separator
 
 // ── Root tasks ───────────────────────────────────────────────────────────────
 
-/**
- * Builds every sub-project jar and copies it to the StarMade mods directory.
- * Equivalent to running `gradle :core:jar :banking:jar ...` in one shot.
- *
- * Usage:
- *   gradle buildAll
- *   gradle buildAll -Pstarmade_root=/path/to/starmade/
- */
 tasks.register('buildAll') {
     group = 'build'
     description = 'Assembles all sub-project jars and deploys them to the StarMade mods directory.'
     dependsOn subprojects.collect { "${it.path}:jar" }
 
     doLast {
-        def smDir = (project.findProperty('starmade_root') ?: '').toString().trim()
         def modsDir = smDir.isEmpty() ? null : new File(smDir + 'mods')
 
         println ''
@@ -65,7 +37,6 @@ tasks.register('buildAll') {
 subprojects {
     apply plugin: 'java'
 
-    def smDir = configuredStarmadeRoot.isEmpty() || configuredStarmadeRoot == 'STARMADE_PATH' ? autoPreparedStarmadeRoot : configuredStarmadeRoot
     def starmadeJar = file(smDir + "StarMade.jar")
     def starmadeLibDir = file(smDir + "lib")
 
@@ -80,8 +51,8 @@ subprojects {
     version = localProps.getProperty('mod_version', rootProject.property('mod_version'))
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     repositories {
@@ -101,13 +72,6 @@ subprojects {
         // JUnit 4 — used for in-game mod tests registered via onRegisterTests().
         // Available on StarMade's runtime classpath; compileOnly here avoids bundling it.
         compileOnly 'junit:junit:4.13.2'
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        if (useAutoPreparedStarmadeRoot && (!starmadeJar.exists() || !starmadeLibDir.exists())) {
-            dependsOn(rootProject.tasks.named('prepareStarmadeCompileDependencies'))
-        }
-        options.encoding = 'UTF-8'
     }
 
     jar {

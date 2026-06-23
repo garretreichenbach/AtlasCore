@@ -1,8 +1,11 @@
 package atlas.buildsectors.gui;
 
 import api.common.GameClient;
+import api.network.packets.PacketUtil;
+import atlas.buildsectors.AtlasBuildSectors;
 import atlas.buildsectors.data.BuildSectorData;
 import atlas.buildsectors.data.BuildSectorDataManager;
+import atlas.core.network.PlayerActionCommandPacket;
 import org.schema.game.client.controller.PlayerInput;
 import org.schema.game.client.view.gui.GUIInputPanel;
 import org.schema.schine.graphicsengine.core.MouseEvent;
@@ -101,8 +104,11 @@ public class BuildSectorDialog extends PlayerInput {
                             @Override
                             public boolean onInput(String s) {
                                 String name = s.trim();
-                                if(!name.isEmpty()) {
-                                    getBuildSectorData().addPlayer(name, BuildSectorData.FRIEND, false);
+                                BuildSectorData sectorData = getBuildSectorData();
+                                if(!name.isEmpty() && sectorData != null) {
+                                    // Server validates the sender's INVITE permission and persists/replicates.
+                                    PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+                                        AtlasBuildSectors.ADD_USER, sectorData.getUUID(), name));
                                     return true;
                                 }
                                 return false;

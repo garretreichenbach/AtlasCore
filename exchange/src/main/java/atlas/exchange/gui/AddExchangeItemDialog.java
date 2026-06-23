@@ -1,8 +1,9 @@
 package atlas.exchange.gui;
 
 import api.common.GameClient;
-import atlas.core.data.DataManager;
+import api.network.packets.PacketUtil;
 import atlas.core.gui.elements.PlayerSearchableDropdownInput;
+import atlas.core.network.PlayerActionCommandPacket;
 import atlas.core.utils.ItemUtils;
 import atlas.exchange.AtlasExchange;
 import atlas.exchange.data.ExchangeData;
@@ -41,13 +42,13 @@ import java.util.Objects;
  */
 public class AddExchangeItemDialog extends PlayerInput {
 
-	protected static int mode;
+	private final int mode;
 	private final AddExchangeBlueprintPanel panel;
 
 	public AddExchangeItemDialog(GameClientState state, int mode) {
 		super(state);
-		AddExchangeItemDialog.mode = mode;
-		(panel = new AddExchangeBlueprintPanel(getState(), this)).onInit();
+		this.mode = mode;
+		(panel = new AddExchangeBlueprintPanel(getState(), this, mode)).onInit();
 	}
 
 	@Override
@@ -64,8 +65,10 @@ public class AddExchangeItemDialog extends PlayerInput {
 								return;
 							}
 							data.setCategory(mode);
-							ExchangeDataManager.getInstance(false).addData(data, false);
-							ExchangeDataManager.getInstance(false).sendPacket(data, DataManager.ADD_DATA, true);
+							// Server validates faction/admin authority, forces producer = sender,
+							// clamps price/count, and replicates the listing back to all clients.
+							PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+								AtlasExchange.ADD_LISTING, data.serialize().toString()));
 						} catch(Exception exception) {
 							AtlasExchange.getInstance().logException("Failed to add exchange data", exception);
 						}
@@ -95,6 +98,7 @@ public class AddExchangeItemDialog extends PlayerInput {
 
 	public static class AddExchangeBlueprintPanel extends GUIInputPanel {
 
+		private final int mode;
 		private ExchangeData exchangeData;
 		private GUIActivatableTextBar nameInput;
 		private GUIActivatableTextBar descriptionInput;
@@ -102,8 +106,9 @@ public class AddExchangeItemDialog extends PlayerInput {
 		private PlayerBlockTypeDropdownInputNew itemDisplay;
 		private PlayerSearchableDropdownInput catalogSelectInput;
 
-		public AddExchangeBlueprintPanel(InputState state, GUICallback guiCallback) {
+		public AddExchangeBlueprintPanel(InputState state, GUICallback guiCallback, int mode) {
 			super("Add_Exchange_Blueprint_Panel", state, 500, 500, guiCallback, Lng.str("Add Blueprint"), "");
+			this.mode = mode;
 		}
 
 		@Override

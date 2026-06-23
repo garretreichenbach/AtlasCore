@@ -2,7 +2,7 @@
 	"name": "AtlasExchange",
 	"author": "VideoGoose",
 	"description": "Player trading and blueprint marketplace for Atlas servers.",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"starmade_version": "0.303.4",
 	"client_mod": false,
 	"server_mod": false,
