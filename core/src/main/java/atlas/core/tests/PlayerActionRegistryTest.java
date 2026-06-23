@@ -11,39 +11,43 @@ import org.junit.Test;
 public class PlayerActionRegistryTest {
 
 	@Test
-	public void testRegisterReturnsNonNegativeId() {
-		int id = PlayerActionRegistry.register((args, sender) -> {
+	public void testRegisterReturnsKey() {
+		String key = PlayerActionRegistry.register("atlas_core_test:returns_key", (args, sender) -> {
 		});
-		Assert.assertTrue("Registered action ID must be >= 0", id >= 0);
+		Assert.assertEquals("Registered action key must be returned verbatim", "atlas_core_test:returns_key", key);
 	}
 
 	@Test
-	public void testConsecutiveRegistrationsReturnDistinctIds() {
-		int id1 = PlayerActionRegistry.register((args, sender) -> {
+	public void testDuplicateKeyIsRejected() {
+		PlayerActionRegistry.register("atlas_core_test:duplicate", (args, sender) -> {
 		});
-		int id2 = PlayerActionRegistry.register((args, sender) -> {
-		});
-		Assert.assertFalse("Consecutive registrations must produce distinct IDs", id1 == id2);
+		try {
+			PlayerActionRegistry.register("atlas_core_test:duplicate", (args, sender) -> {
+			});
+			Assert.fail("Registering a duplicate key must throw");
+		} catch(IllegalArgumentException expected) {
+			// expected
+		}
 	}
 
 	@Test
 	public void testHandlerIsInvokedWithCorrectArgs() {
 		boolean[] invoked = {false};
 		String[] captured = {null};
-		int id = PlayerActionRegistry.register((args, sender) -> {
+		String key = PlayerActionRegistry.register("atlas_core_test:invoke", (args, sender) -> {
 			invoked[0] = true;
 			if(args != null && args.length > 0) captured[0] = args[0];
 		});
-		PlayerActionRegistry.process(id, new String[]{"ping"}, null);
+		PlayerActionRegistry.process(key, new String[]{"ping"}, null);
 		Assert.assertTrue("Handler must be invoked after process()", invoked[0]);
 		Assert.assertEquals("Handler must receive the correct argument", "ping", captured[0]);
 	}
 
 	@Test
 	public void testProcessWithEmptyArgsDoesNotThrow() {
-		int id = PlayerActionRegistry.register((args, sender) -> {
+		String key = PlayerActionRegistry.register("atlas_core_test:empty_args", (args, sender) -> {
 		});
 		// Must not throw even when args array is empty
-		PlayerActionRegistry.process(id, new String[0], null);
+		PlayerActionRegistry.process(key, new String[0], null);
 	}
 }

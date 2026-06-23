@@ -11,7 +11,6 @@ import atlas.core.api.SubModRegistry;
 import atlas.core.data.DataManager;
 import atlas.core.data.DataTypeRegistry;
 import atlas.core.data.SerializableData;
-import atlas.core.data.misc.ControlBindingData;
 import atlas.core.data.player.PlayerData;
 import atlas.core.data.player.PlayerDataManager;
 import atlas.core.manager.ConfigManager;
@@ -89,7 +88,6 @@ public class AtlasCore extends StarMod {
 
 	@Override
 	public void onClientCreated(ClientInitializeEvent event) {
-		ControlBindingData.load(this);
 	}
 
 	@Override

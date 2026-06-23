@@ -8,8 +8,9 @@ Player banking system for the Atlas mod suite. Tracks per-player credit balances
 
 - Per-player credit accounts stored as JSON and synchronised to clients on spawn
 - Full transaction history (deposits, withdrawals, transfers) with timestamps
-- Server-side `SET_CREDITS` action for admin commands / other mods
-- In-game **Banking** dialog accessible from the top bar or `N` key
+- Server-authoritative deposit / withdraw / transfer actions (the client never mutates balances directly)
+- Admin `SET_CREDITS` action for commands / other mods
+- In-game **Banking** dialog accessible from the top bar or the **Open Banking Menu** key (default `N`, rebindable in the controls menu)
 
 ## Data model
 
@@ -18,14 +19,14 @@ Player banking system for the Atlas mod suite. Tracks per-player credit balances
 | Field | Type | Description |
 |-------|------|-------------|
 | `playerName` | `String` | Owner of this account |
-| `storedCredits` | `double` | Current balance |
+| `storedCredits` | `long` | Current balance (whole credits) |
 | `transactionHistory` | `Set<BankTransactionData>` | All past transactions |
 
 ### `BankTransactionData`
 
 | Field | Type |
 |-------|------|
-| `amount` | `double` |
+| `amount` | `long` |
 | `fromUUID` | `String` |
 | `toUUID` | `String` |
 | `subject` | `String` |
@@ -35,18 +36,19 @@ Player banking system for the Atlas mod suite. Tracks per-player credit balances
 
 ## Server-side actions
 
+All are registered under stable string keys and resolve the acting player from the
+authenticated `sender`, never from packet args.
+
 | Constant | Args | Effect |
 |----------|------|--------|
-| `AtlasBanking.SET_CREDITS` | `playerName`, `amount` | Sets a player's balance to `amount` |
+| `AtlasBanking.DEPOSIT` | `amount` | Moves `amount` from the sender's wallet into their bank |
+| `AtlasBanking.WITHDRAW` | `amount` | Moves `amount` from the sender's bank into their wallet |
+| `AtlasBanking.TRANSFER` | `targetName`, `amount`, `subject`, `message` | Transfers `amount` from the sender's bank to `targetName` |
+| `AtlasBanking.SET_CREDITS` | `playerName`, `amount` | **Admin only.** Sets a player's balance to `amount` |
 
 ```java
-// From any server-side code:
-PlayerActionRegistry.process(AtlasBanking.SET_CREDITS, new String[]{ "PlayerName", "5000.0" });
-```
-
-Or send from a client:
-```java
-new PlayerActionCommandPacket(AtlasBanking.SET_CREDITS, "PlayerName", "5000.0").sendToServer();
+// From client code — the server validates funds/identity and applies the change:
+PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(AtlasBanking.DEPOSIT, "5000"));
 ```
 
 ## Tests

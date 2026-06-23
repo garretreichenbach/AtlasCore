@@ -5,7 +5,6 @@ import api.network.PacketReadBuffer;
 import api.network.PacketWriteBuffer;
 import atlas.core.AtlasCore;
 import atlas.core.data.DataManager;
-import atlas.core.data.SerializableData;
 import atlas.core.data.DataTypeRegistry;
 import org.schema.game.common.data.player.PlayerState;
 
@@ -48,7 +47,11 @@ public class SyncRequestPacket extends Packet {
 		if(entry != null) {
 			DataManager<?> dataManager = entry.getManager(true);
 			if(dataManager != null) {
-				for(SerializableData data : dataManager.getCache(true)) dataManager.sendDataToPlayer(playerState, data, DataManager.ADD_DATA);
+				// Route through sendAllDataToPlayer so managers can apply per-player
+				// access filtering (e.g. only send build sectors the player may see).
+				// The previous inline loop over getCache(true) leaked the entire server
+				// cache to every requesting client.
+				dataManager.sendAllDataToPlayer(playerState);
 			} else {
 				AtlasCore.getInstance().logWarning(
 						"Failed to find DataManager for type: " + dataTypeName +

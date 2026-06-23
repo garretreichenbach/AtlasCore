@@ -9,13 +9,24 @@ Protected build zones for the Atlas mod suite. Allows server administrators to d
 - Per-sector entity registration (ships and stations that belong to the build zone)
 - Per-entity permission table — granular control over who can interact with each entity
 - Per-user permission overrides on top of global sector defaults
-- In-game **Build Sectors** dialog accessible from the top bar
+- In-game **Build Sectors** dialog accessible from the top bar or the **Open Build Sector Menu** key (default `B`, rebindable in the controls menu)
+- Sector entry enforced server-side for every teleport type via `MixinSectorSwitch` (not just boundary crossings)
 - HUD overlay drawn via `BuildSectorHudDrawer` (registered through `RegisterWorldDrawersEvent`)
 - Automatic stale-entity pruning via `BuildSectorData.prune()`
 
 ## Permission types
 
 Permissions are defined in `BuildSectorData.PermissionTypes` and can be toggled per-entity or globally for a user. Examples include spawn rights, AI control, turret management, and invulnerability overrides.
+
+## Server-side actions
+
+Entering/leaving, entity controls, and user/permission edits all go through string-keyed
+`PlayerActionRegistry` handlers that authorise the acting player from the authenticated
+`sender` before mutating and replicating server state — the client GUI never edits sector
+data directly:
+
+`atlas_buildsectors:enter`, `:leave`, `:toggle_ai`, `:set_invulnerable`, `:delete_entity`,
+`:add_user`, `:remove_user`, `:set_permission`, `:set_entity_permission`.
 
 ## Data model
 

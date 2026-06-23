@@ -69,7 +69,7 @@ public abstract class DataManager<E extends SerializableData> {
 	}
 
 	public void handlePacket(SerializableData data, int type, boolean server) {
-		AtlasCore.getInstance().logInfo(server ? "[SERVER]" : "[CLIENT]" + " Received " + data.getDataTypeName() + " " + data.getUUID() + " with type " + getTypeString(type) + ".");
+		AtlasCore.getInstance().logInfo((server ? "[SERVER]" : "[CLIENT]") + " Received " + data.getDataTypeName() + " " + data.getUUID() + " with type " + getTypeString(type) + ".");
 		switch(type) {
 			case ADD_DATA:
 				addData((E) data, server);

@@ -1,13 +1,17 @@
 package atlas.buildsectors.gui;
 
 import api.common.GameClient;
+import api.network.packets.PacketUtil;
+import atlas.buildsectors.AtlasBuildSectors;
 import atlas.buildsectors.data.BuildSectorData;
+import atlas.core.network.PlayerActionCommandPacket;
 import org.schema.schine.graphicsengine.core.MouseEvent;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.*;
 import org.schema.schine.input.InputState;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -34,6 +38,7 @@ public class BuildSectorUserScrollableList extends ScrollableTableList<String> i
 
 	@Override
 	protected Collection<String> getElementList() {
+		if(buildSectorData == null) return Collections.emptySet();
 		return buildSectorData.getAllUsers();
 	}
 
@@ -103,7 +108,9 @@ public class BuildSectorUserScrollableList extends ScrollableTableList<String> i
 				@Override
 				public void callback(GUIElement guiElement, MouseEvent mouseEvent) {
 					if(mouseEvent.pressedLeftMouse()) {
-						buildSectorData.removePlayer(username, false);
+						// Server validates the sender's KICK permission and persists/replicates.
+						PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+							AtlasBuildSectors.REMOVE_USER, buildSectorData.getUUID(), username));
 						flagDirty();
 					}
 				}

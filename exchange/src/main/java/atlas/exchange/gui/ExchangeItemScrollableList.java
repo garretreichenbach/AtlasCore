@@ -268,8 +268,9 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 
 							@Override
 							public void pressedOK() {
-								ExchangeDataManager.getInstance(false).removeData(data, false);
-								ExchangeDataManager.getInstance(false).sendPacket(data, DataManager.REMOVE_DATA, true);
+								// Server re-validates ownership before removing and replicating.
+								PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+									AtlasExchange.REMOVE_LISTING, data.getUUID()));
 								deactivate();
 								flagDirty();
 							}
@@ -452,22 +453,23 @@ public class ExchangeItemScrollableList extends ScrollableTableList<ExchangeData
 	// ── Utility ──────────────────────────────────────────────────────────────
 
 	private void buyItem(ExchangeData data) {
-		int count = (type == ExchangeData.WEAPONS) ? 1 : data.getItemCount();
-		PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.GIVE_ITEM, String.valueOf(data.getItemId()), String.valueOf(count), String.valueOf(type == ExchangeData.WEAPONS)));
+		// Only the listing UUID is sent; the server derives item, count, price and
+		// seller from its own authoritative listing.
+		PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(AtlasExchange.BUY_ITEM, data.getUUID()));
 	}
 
 	/**
 	 * Sends a server-side request to give the buyer an empty {@code BlueprintMetaItem}.
 	 */
 	private void buyBlueprint(ExchangeData data) {
-		PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.BUY_BLUEPRINT, data.getCatalogName(), data.getProducer()));
+		PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(AtlasExchange.BUY_BLUEPRINT, data.getUUID()));
 	}
 
 	/**
 	 * Sends a server-side request to give the buyer a shipyard design item.
 	 */
 	private void buyBlueprintAsDesign(ExchangeData data) {
-		PacketUtil.sendPacket(GameClient.getClientPlayerState(), new PlayerActionCommandPacket(AtlasExchange.BUY_DESIGN, data.getCatalogName(), data.getProducer()));
+		PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(AtlasExchange.BUY_DESIGN, data.getUUID()));
 	}
 
 	// ── Row class ────────────────────────────────────────────────────────────

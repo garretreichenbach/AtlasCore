@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages banking data for all players.
@@ -16,7 +17,7 @@ import java.util.Set;
  */
 public class BankingDataManager extends DataManager<BankingData> {
 
-	private final Set<BankingData> clientCache = new HashSet<>();
+	private final Set<BankingData> clientCache = ConcurrentHashMap.newKeySet();
 	private static BankingDataManager serverInstance;
 	private static BankingDataManager clientInstance;
 
@@ -95,7 +96,8 @@ public class BankingDataManager extends DataManager<BankingData> {
 		return null;
 	}
 
-	public void setPlayerCredits(String playerName, double amount, boolean server) {
+	public void setPlayerCredits(String playerName, long amount, boolean server) {
+		if(amount < 0) amount = 0; // balances are never negative
 		BankingData data = getFromPlayerName(playerName, server);
 		if(data != null) {
 			data.setStoredCredits(amount);

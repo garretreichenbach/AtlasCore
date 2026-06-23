@@ -42,10 +42,4 @@ public interface IAtlasSubMod {
      * initialize missing data for newly joined players.
      */
     default void onPlayerJoinWorld(PlayerJoinWorldEvent event) {}
-
-    /**
-     * Called during {@code KeyPressEvent} for each keybinding registered by this
-     * sub-mod. Sub-mods should check {@code bindingName} and act accordingly.
-     */
-    default void onKeyPress(String bindingName) {}
 }

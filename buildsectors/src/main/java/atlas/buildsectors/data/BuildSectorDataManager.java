@@ -22,7 +22,7 @@ import java.util.*;
  */
 public class BuildSectorDataManager extends DataManager<BuildSectorData> {
 
-    private final Set<BuildSectorData> clientCache = new HashSet<>();
+    private final Set<BuildSectorData> clientCache = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static BuildSectorDataManager serverInstance;
     private static BuildSectorDataManager clientInstance;
 

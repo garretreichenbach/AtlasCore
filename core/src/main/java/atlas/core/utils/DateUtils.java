@@ -21,7 +21,7 @@ public class DateUtils {
 	}
 
 	public static String getTimeFormatted(long time) {
-		return getTimeFormatted(time, "MM/dd/yyyy '-' hh:mm:ss z");
+		return getTimeFormatted(time, "MM/dd/yyyy '-' HH:mm:ss z");
 	}
 
 	public static String getTimeFormatted(long time, String format) {
@@ -29,7 +29,7 @@ public class DateUtils {
 	}
 
 	public static String getCurrentTimeFormatted() {
-		return getCurrentTimeFormatted("MM/dd/yyyy '-' hh:mm:ss z");
+		return getCurrentTimeFormatted("MM/dd/yyyy '-' HH:mm:ss z");
 	}
 
 	public static String getCurrentTimeFormatted(String format) {

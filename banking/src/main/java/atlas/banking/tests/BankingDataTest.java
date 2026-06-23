@@ -15,7 +15,7 @@ public class BankingDataTest {
 	public void testNewDataHasZeroCredits() {
 		BankingData data = new BankingData("Alice");
 		Assert.assertEquals("New BankingData must start with 0 credits",
-				0.0, data.getStoredCredits(), 0.0);
+				0L, data.getStoredCredits());
 	}
 
 	@Test
@@ -28,14 +28,14 @@ public class BankingDataTest {
 	@Test
 	public void testSetAndGetCredits() {
 		BankingData data = new BankingData("Charlie");
-		data.setStoredCredits(500.75);
-		Assert.assertEquals(500.75, data.getStoredCredits(), 0.001);
+		data.setStoredCredits(500L);
+		Assert.assertEquals(500L, data.getStoredCredits());
 	}
 
 	@Test
 	public void testSerializeRoundTrip() {
 		BankingData original = new BankingData("Dave");
-		original.setStoredCredits(1234.56);
+		original.setStoredCredits(1234L);
 
 		JSONObject json = original.serialize();
 		BankingData restored = new BankingData(json);
@@ -43,7 +43,7 @@ public class BankingDataTest {
 		Assert.assertEquals("Player name must survive JSON round-trip",
 				original.getPlayerName(), restored.getPlayerName());
 		Assert.assertEquals("Credits must survive JSON round-trip",
-				original.getStoredCredits(), restored.getStoredCredits(), 0.001);
+				original.getStoredCredits(), restored.getStoredCredits());
 		Assert.assertEquals("UUID must survive JSON round-trip",
 				original.getUUID(), restored.getUUID());
 	}
@@ -51,14 +51,14 @@ public class BankingDataTest {
 	@Test
 	public void testTransactionRoundTrip() {
 		BankingData.BankTransactionData tx = new BankingData.BankTransactionData(
-				250.0, "from-uuid", "to-uuid", "Test subject", "Test message",
+				250L, "from-uuid", "to-uuid", "Test subject", "Test message",
 				BankingData.BankTransactionData.TransactionType.TRANSFER
 		);
 
 		JSONObject json = tx.serialize();
 		BankingData.BankTransactionData restored = new BankingData.BankTransactionData(json);
 
-		Assert.assertEquals("Amount must survive round-trip", tx.getAmount(), restored.getAmount(), 0.001);
+		Assert.assertEquals("Amount must survive round-trip", tx.getAmount(), restored.getAmount());
 		Assert.assertEquals("FromUUID must survive round-trip", tx.getFromUUID(), restored.getFromUUID());
 		Assert.assertEquals("ToUUID must survive round-trip", tx.getToUUID(), restored.getToUUID());
 		Assert.assertEquals("Subject must survive round-trip", tx.getSubject(), restored.getSubject());
@@ -71,7 +71,7 @@ public class BankingDataTest {
 	public void testAddTransactionIncreasesHistorySize() {
 		BankingData data = new BankingData("Eve");
 		BankingData.BankTransactionData tx = new BankingData.BankTransactionData(
-				100.0, "a", "b", "subj", "msg",
+				100L, "a", "b", "subj", "msg",
 				BankingData.BankTransactionData.TransactionType.DEPOSIT
 		);
 		data.addTransaction(tx);

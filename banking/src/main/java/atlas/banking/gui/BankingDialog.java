@@ -1,10 +1,13 @@
 package atlas.banking.gui;
 
 import api.common.GameClient;
+import api.network.packets.PacketUtil;
 import api.utils.game.PlayerUtils;
 import api.utils.gui.SimplePlayerTextInput;
+import atlas.banking.AtlasBanking;
 import atlas.banking.data.BankingData;
 import atlas.banking.data.BankingDataManager;
+import atlas.core.network.PlayerActionCommandPacket;
 import org.schema.game.client.controller.PlayerInput;
 import org.schema.game.client.controller.PlayerOkCancelInput;
 import org.schema.game.client.view.gui.GUIInputPanel;
@@ -17,7 +20,6 @@ import org.schema.schine.graphicsengine.forms.font.FontLibrary;
 import org.schema.schine.graphicsengine.forms.gui.*;
 import org.schema.schine.graphicsengine.forms.gui.newgui.*;
 import org.schema.schine.input.InputState;
-import org.spongepowered.asm.mixin.Overwrite;
 
 /**
  * [Description]
@@ -51,11 +53,20 @@ public class BankingDialog extends PlayerInput {
 	public static class BankingPanel extends GUIInputPanel {
 
 		private GUITextOverlay storedCreditsText;
-		private final BankingData bankingData;
 
 		public BankingPanel(InputState state, GUICallback guiCallback) {
 			super("BankingPanel", state, 800, 500, guiCallback, "", "");
-			bankingData = BankingDataManager.getInstance(false).getFromPlayerName(GameClient.getClientPlayerState().getName(), false);
+		}
+
+		/** Live lookup of this player's banking data from the client cache (may be null before sync). */
+		private BankingData bankingData() {
+			return BankingDataManager.getInstance(false).getFromPlayerName(GameClient.getClientPlayerState().getName(), false);
+		}
+
+		/** Current bank balance, or 0 if data hasn't synced from the server yet. */
+		private long storedCredits() {
+			BankingData d = bankingData();
+			return d != null ? d.getStoredCredits() : 0L;
 		}
 
 		@Override
@@ -69,7 +80,7 @@ public class BankingDialog extends PlayerInput {
 			storedCreditsText.setTextSimple(new Object() {
 				@Override
 				public String toString() {
-					return "Stored Credits: " + bankingData.getStoredCredits();
+					return "Stored Credits: " + storedCredits();
 				}
 			});
 			contentPane.getContent(0).attach(storedCreditsText);
@@ -86,8 +97,9 @@ public class BankingDialog extends PlayerInput {
 								try {
 									long amount = Long.parseLong(s.trim());
 									if(amount > 0 && amount <= GameClient.getClientPlayerState().getCredits()) {
-										bankingData.setStoredCredits(bankingData.getStoredCredits() + amount);
-										BankingDataManager.getInstance(false).setPlayerCredits(GameClient.getClientPlayerState().getName(), GameClient.getClientPlayerState().getCredits() - amount, false);
+										// Server re-validates and moves wallet -> bank authoritatively.
+										PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+											AtlasBanking.DEPOSIT, String.valueOf(amount)));
 										return true;
 									}
 								} catch(NumberFormatException ignored) {
@@ -122,9 +134,10 @@ public class BankingDialog extends PlayerInput {
 							public boolean onInput(String s) {
 								try {
 									long amount = Long.parseLong(s.trim());
-									if(amount > 0 && amount <= bankingData.getStoredCredits()) {
-										bankingData.setStoredCredits(bankingData.getStoredCredits() - amount);
-										BankingDataManager.getInstance(false).setPlayerCredits(GameClient.getClientPlayerState().getName(), GameClient.getClientPlayerState().getCredits() + amount, false);
+									if(amount > 0 && amount <= storedCredits()) {
+										// Server re-validates and moves bank -> wallet authoritatively.
+										PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+											AtlasBanking.WITHDRAW, String.valueOf(amount)));
 										return true;
 									}
 								} catch(NumberFormatException ignored) {
@@ -137,7 +150,7 @@ public class BankingDialog extends PlayerInput {
 
 				@Override
 				public boolean isOccluded() {
-					return bankingData.getStoredCredits() <= 0;
+					return storedCredits() <= 0;
 				}
 			}, new GUIActivationCallback() {
 				@Override
@@ -147,7 +160,7 @@ public class BankingDialog extends PlayerInput {
 
 				@Override
 				public boolean isActive(InputState inputState) {
-					return bankingData.getStoredCredits() > 0;
+					return storedCredits() > 0;
 				}
 			});
 			buttonPane.addButton(2, 0, "Send Credits", GUIHorizontalArea.HButtonColor.GREEN, new GUICallback() {
@@ -181,14 +194,16 @@ public class BankingDialog extends PlayerInput {
 										PlayerUtils.sendMessage(GameClient.getClientPlayerState(), "Invalid player name.");
 										return;
 									}
-									if(amount <= bankingData.getStoredCredits()) {
+									if(amount <= storedCredits()) {
 										if(targetData.getPlayerName().equals(GameClient.getClientPlayerState().getName())) {
 											PlayerUtils.sendMessage(GameClient.getClientPlayerState(), "You cannot send credits to yourself.");
 											return;
 										}
-										targetData.setStoredCredits(targetData.getStoredCredits() + amount);
-										targetData.addTransaction(new BankingData.BankTransactionData(amount, bankingData.getUUID(), targetData.getUUID(), subjectInput.getText(), messageInput.getText(), BankingData.BankTransactionData.TransactionType.TRANSFER));
-										bankingData.setStoredCredits(bankingData.getStoredCredits() - amount);
+										// Server is the source of truth: it debits the authenticated sender,
+										// credits the target, records the transaction, and replicates.
+										PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(
+											AtlasBanking.TRANSFER, targetData.getPlayerName(), String.valueOf(amount),
+											subjectInput.getText(), messageInput.getText()));
 										deactivate();
 									} else PlayerUtils.sendMessage(GameClient.getClientPlayerState(), "Invalid amount to send.");
 								} else PlayerUtils.sendMessage(GameClient.getClientPlayerState(), "Invalid amount to send.");
@@ -352,19 +367,19 @@ public class BankingDialog extends PlayerInput {
 
 				@Override
 				public boolean isActive(InputState inputState) {
-					return bankingData.getStoredCredits() > 0;
+					return storedCredits() > 0;
 				}
 
 				@Override
 				public boolean isHighlighted(InputState inputState) {
-					return bankingData.getStoredCredits() > 0;
+					return storedCredits() > 0;
 				}
 			});
 			contentPane.getContent(0).attach(buttonPane);
 			buttonPane.getPos().y += storedCreditsText.getHeight() + 10;
 
 			contentPane.addNewTextBox(300);
-			PlayerBankingTransactionScrollableList transactionList = new PlayerBankingTransactionScrollableList(getState(), contentPane.getContent(1), bankingData);
+			PlayerBankingTransactionScrollableList transactionList = new PlayerBankingTransactionScrollableList(getState(), contentPane.getContent(1), bankingData());
 			transactionList.onInit();
 			contentPane.getContent(1).attach(transactionList);
 		}

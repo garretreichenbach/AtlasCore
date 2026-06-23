@@ -26,7 +26,6 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 	private static BuildSectorEntityScrollableList instance;
 	protected final BuildSectorData buildSectorData;
 	private final GUIElement parent;
-	private GUIHorizontalButtonTablePane buttonPane;
 
 	public BuildSectorEntityScrollableList(InputState state, GUIElement parent, BuildSectorData buildSectorData) {
 		super(state, 100, 100, parent);
@@ -125,8 +124,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 					setWidth(parent.getWidth() - 28.0f);
 				}
 			};
-			if(buttonPane != null) buttonPane.cleanUp();
-			redrawButtonPane(entityData, anchor);
+			GUIHorizontalButtonTablePane buttonPane = redrawButtonPane(entityData, anchor);
 			anchor.attach(buttonPane);
 			entryListRow.expanded = new GUIElementList(getState());
 			entryListRow.expanded.add(new GUIListElement(anchor, getState()));
@@ -136,8 +134,8 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 		guiElementList.updateDim();
 	}
 
-	private void redrawButtonPane(BuildSectorData.BuildSectorEntityData entityData, GUIAncor anchor) {
-		buttonPane = new GUIHorizontalButtonTablePane(getState(), 3, 2, anchor);
+	private GUIHorizontalButtonTablePane redrawButtonPane(BuildSectorData.BuildSectorEntityData entityData, GUIAncor anchor) {
+		GUIHorizontalButtonTablePane buttonPane = new GUIHorizontalButtonTablePane(getState(), 3, 2, anchor);
 		buttonPane.onInit();
 		String user = ((GameClientState) getState()).getPlayerName();
 
@@ -348,6 +346,7 @@ public class BuildSectorEntityScrollableList extends ScrollableTableList<BuildSe
 				}
 			});
 		}
+		return buttonPane;
 	}
 
 	public class BuildSectorEntityScrollableListRow extends ScrollableTableList<BuildSectorData.BuildSectorEntityData>.Row {

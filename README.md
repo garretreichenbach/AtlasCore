@@ -11,11 +11,6 @@ Atlas is a modular StarMade server mod system that replaces the monolithic EdenC
 | [AtlasBuildSectors](buildsectors/) | `AtlasBuildSectors-x.x.x.jar` | Protected build zones with per-entity permission control |
 | [AtlasExchange](exchange/) | `AtlasExchange-x.x.x.jar` | Blueprint and item marketplace with gold bar currency |
 
-## Requirements
-
-- StarMade (dev build — see `starmade_build_url` in `gradle.properties`)
-- Java 8
-
 ## Installation
 
 Drop any combination of jars into your StarMade `mods/` directory. AtlasCore must always be present.
@@ -44,7 +39,7 @@ starmade_root=C:/path/to/StarMade/
 gradle buildAll
 ```
 
-Jars are written directly to `{starmade_root}mods/`.
+Jars are written directly to `{starmade_root}/mods/`.
 
 ### Build a single module
 
@@ -70,26 +65,4 @@ Test classes are bundled in each jar and registered at startup via `onRegisterTe
 /run_tests atlas.core.tests.*
 /run_tests atlas.banking.tests.*
 /run_tests atlas.exchange.tests.*
-```
-
-## CI / CD
-
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| [Build](.github/workflows/build.yml) | Push to `master`/`develop`, PRs | Compiles all modules against a real StarMade download |
-| [Release](.github/workflows/release.yml) | `v*` tag push or manual | Builds, packages, and publishes all jars to GitHub Releases |
-| [Deploy Docs](.github/workflows/docs.yml) | Push to `master` | Publishes MkDocs site to GitHub Pages |
-
-## Project structure
-
-```
-AtlasCore/
-├── core/           AtlasCore — shared infrastructure
-├── banking/        AtlasBanking
-├── buildsectors/   AtlasBuildSectors
-├── exchange/       AtlasExchange
-├── docs/           MkDocs documentation source
-├── build.gradle    Root build script (shared config + buildAll task)
-├── settings.gradle Multi-project settings
-└── gradle.properties  Version and StarMade path config
 ```

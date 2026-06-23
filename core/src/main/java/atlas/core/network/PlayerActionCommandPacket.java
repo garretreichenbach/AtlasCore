@@ -16,10 +16,10 @@ import java.util.Arrays;
  */
 public class PlayerActionCommandPacket extends Packet {
 
-	private int type;
+	private String type;
 	private String[] args;
 
-	public PlayerActionCommandPacket(int type, String... args) {
+	public PlayerActionCommandPacket(String type, String... args) {
 		this.type = type;
 		this.args = args;
 	}
@@ -28,13 +28,13 @@ public class PlayerActionCommandPacket extends Packet {
 
 	@Override
 	public void readPacketData(PacketReadBuffer packetReadBuffer) throws IOException {
-		type = packetReadBuffer.readInt();
+		type = packetReadBuffer.readString();
 		args = packetReadBuffer.readStringList().toArray(new String[0]);
 	}
 
 	@Override
 	public void writePacketData(PacketWriteBuffer packetWriteBuffer) throws IOException {
-		packetWriteBuffer.writeInt(type);
+		packetWriteBuffer.writeString(type);
 		packetWriteBuffer.writeStringList(Arrays.asList(args));
 	}
 

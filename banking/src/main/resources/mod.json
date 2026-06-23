@@ -2,7 +2,7 @@
 	"name": "AtlasBanking",
 	"author": "VideoGoose",
 	"description": "Player banking, economy, and prize bar system for Atlas servers.",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"starmade_version": "0.303.4",
 	"client_mod": true,
 	"server_mod": true,
