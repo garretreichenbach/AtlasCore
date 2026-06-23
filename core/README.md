@@ -6,13 +6,16 @@ Shared infrastructure for the Atlas mod system. Every other Atlas module depends
 
 - **Sub-mod registry** — modules register themselves and receive lifecycle callbacks (`onAtlasCoreReady`, `registerTopBarButtons`, etc.)
 - **Data type registry** — runtime registration of serializable data types without modifying core enums
-- **Player action registry** — sub-mods register server-side action handlers and receive integer IDs to use with `PlayerActionCommandPacket`
+- **Player action registry** — sub-mods register server-side action handlers under stable string keys to use with `PlayerActionCommandPacket`
 - **Networking** — `SendDataPacket`, `SyncRequestPacket`, `PlayerActionCommandPacket`
 - **Data managers** — base `DataManager<T>` for server/client data synchronisation
 - **Element system** — `Item` and `ElementInterface` base classes for registering custom game elements
 - **Config** — `ConfigManager` (tip interval, debug mode, MOTD, etc.)
-- **GUI primitives** — `ECCatalogScrollableListNew`, `PlayerSearchableDropdownInput`, `ItemUtils`, `EntityUtils`
-- **Control bindings** — `ControlBindingData` for key-bind registration
+- **GUI primitives** — `PlayerSearchableDropdownInput`, `ItemUtils`, `EntityUtils`
+
+> Key bindings are registered through StarMade's own `KeyboardMappings` API (they
+> show up in the in-game controls menu). AtlasCore no longer ships a custom
+> control-binding system.
 
 ## Key APIs
 
@@ -36,8 +39,10 @@ public class MyMod extends StarMod implements IAtlasSubMod {
 ### Registering a server-side action
 
 ```java
-// In onAtlasCoreReady():
-public static int MY_ACTION = PlayerActionRegistry.register((args, sender) -> {
+// In onAtlasCoreReady() — register under a stable, globally-unique string key
+// ("modId:action"). The same key must resolve on client and server, so it stays
+// correct no matter which modules are installed or in what order they loaded.
+public static final String MY_ACTION = PlayerActionRegistry.register("my_mod:my_action", (args, sender) -> {
     // sender is the authenticated PlayerState on the server, null on the client.
     // Always use sender.getName() for identity checks — never trust args for player name.
     if(sender == null) return; // server-only action
@@ -46,7 +51,7 @@ public static int MY_ACTION = PlayerActionRegistry.register((args, sender) -> {
 });
 
 // From any client code (no need to include player name — server derives it from sender):
-new PlayerActionCommandPacket(MyMod.MY_ACTION, "extra", "args").sendToServer();
+PacketUtil.sendPacketToServer(new PlayerActionCommandPacket(MyMod.MY_ACTION, "extra", "args"));
 ```
 
 ### Registering a data type

@@ -3,51 +3,58 @@
 ## Overview
 
 AtlasBuildSectors gives every player a private creative sector where they can
-build freely without hostile NPCs, resource costs, or interference from other players.
+build freely without hostile NPCs, damage, or interference from other players.
 
-## Opening Your Build Sector
+## Opening the Menu
 
-Click the **BUILD SECTOR** button in the top-right player menu.
-You will be teleported to your sector instantly.
+Click the **BUILD SECTOR** button in the top-right player menu, or press the
+**Open Build Sector Menu** key (default **B**). You can rebind it under
+*Options → Controls → MOD CONTROLS* in the in-game settings.
+
+The menu lists every build sector you own or have been invited to. Click
+**WARP** next to a sector to be teleported into it, and **LEAVE** to return to
+where you were before.
 
 ## Features
 
 ### Private Space
 
-Your build sector belongs to you. Other players cannot enter unless you invite them.
-NPCs and pirates do not spawn inside build sectors.
+Your build sector belongs to you. Other players cannot enter unless you invite
+them — entry is enforced by the server for every kind of teleport, not just
+flying across the boundary. NPCs and pirates do not spawn inside, and damage is
+disabled.
 
-### Creative Mode
+### Entities
 
-Blocks placed in your build sector do not consume inventory items.
-All block types are available regardless of your in-game credits or inventory.
+Ships and stations inside your sector are listed in the **ENTITIES** tab, where
+(subject to permissions) you can warp to them, toggle their AI, toggle their
+invulnerability, delete them, and edit per-entity permissions.
 
-### Blueprint Spawning
+### Inviting & Removing Players
 
-You can spawn ships and stations from your catalog directly into your build sector
-via the **SPAWN** action in the sector menu.
-
-### Inviting Players
-
-Open the build sector menu and use the **INVITE** option to give another player
-access to your sector. You can revoke access at any time.
+In the **PERMISSIONS** tab, use **ADD USER** to grant another player access, and
+**REMOVE USER** to revoke it. Invites and permission changes are sent to the
+server, which verifies your authority, saves them, and replicates them — so they
+take effect for everyone and survive restarts.
 
 ### Permissions
 
+Each user you add has an individual set of permissions:
+
 | Permission | Description |
 |---|---|
-| **Build** | Player can place and remove blocks |
-| **Spawn** | Player can spawn blueprints from catalog |
-| **Invite** | Player can invite additional players |
+| **Edit Own / Other Ships** | Place and remove blocks on ships |
+| **Spawn / Spawn Enemies** | Spawn blueprints (and hostile entities) |
+| **Delete Own / Other Ships** | Delete entities |
+| **Toggle AI** | Turn ship AI on and off |
+| **Toggle Damage** | Toggle entity invulnerability |
+| **Invite / Kick** | Add or remove other users |
+| **Edit Permissions** | Change other users' permissions |
+
+The sector owner always has full permissions and cannot be removed. Per-entity
+permissions can override these for a specific ship or station.
 
 ## Leaving Your Sector
 
-Click **LEAVE** in the sector menu or use `/buildsector leave` to return
-to your last known real-space position.
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `/buildsector` | Open the build sector menu |
-| `/buildsector leave` | Leave your build sector |
+Click **LEAVE** in the menu to return to your last real-space position. If no
+prior position is recorded, you are sent to the server's spawn sector.

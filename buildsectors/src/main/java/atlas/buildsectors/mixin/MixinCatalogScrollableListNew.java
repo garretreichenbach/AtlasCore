@@ -185,14 +185,11 @@ public abstract class MixinCatalogScrollableListNew {
 			}
 		};
 
-		pp.setInputChecker(new InputChecker() {
-			@Override
-			public boolean check(String s, TextCallback cb) {
-				if(EntityRequest.isShipNameValid(s)) return true;
-				cb.onFailedTextCheck(Lng.str("Must only contain letters or numbers or (_-)!"));
-				return false;
-			}
-		});
+		pp.setInputChecker((s, cb) -> {
+            if(EntityRequest.isShipNameValid(s)) return true;
+            cb.onFailedTextCheck(Lng.str("Must only contain letters or numbers or (_-)!"));
+            return false;
+        });
 
 		pp.getInputPanel().onInit();
 

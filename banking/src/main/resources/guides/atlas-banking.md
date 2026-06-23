@@ -2,43 +2,44 @@
 
 ## Overview
 
-AtlasBanking adds a player economy system with credits, a banking interface,
-and a prize bar redemption system.
+AtlasBanking gives every player a personal bank account: a persistent credit
+balance, deposits and withdrawals between your bank and your in-game wallet,
+player-to-player transfers, and a full transaction history.
 
 ## Opening the Bank
 
-Click the **BANKING** button in the top-right player menu.
+Click the **BANKING** button in the top-right player menu, or press the
+**Open Banking Menu** key (default **N**). You can rebind it under
+*Options → Controls → MOD CONTROLS* in the in-game settings.
 
 ## Features
 
 ### Account Balance
 
-Your credit balance is shown at the top of the banking window.
-Credits persist across sessions and server restarts.
+Your stored credit balance is shown at the top of the banking window.
+Balances are whole credits and persist across sessions and server restarts.
 
 ### Deposits & Withdrawals
 
-Transfer credits between your bank account and your in-game wallet.
-Credits in your wallet can be spent on the Exchange marketplace.
+Move credits between your bank account and your in-game wallet:
+
+- **Deposit** — transfers credits from your wallet into your bank.
+- **Withdraw** — transfers credits from your bank back into your wallet.
+
+Both operations are validated and applied by the server, so they work the same
+in single-player and on multiplayer servers.
 
 ### Player Transfers
 
-Send credits directly to another player by entering their name and an amount.
-Transfers are instant and logged to your transaction history.
+Use **Send Credits** to transfer credits from your bank to another player's
+bank account. Enter the recipient's name, an amount, and an optional subject and
+message. The server verifies you have the funds before completing the transfer,
+and records it in both players' histories.
 
 ### Transaction History
 
-Review all past deposits, withdrawals, and transfers with timestamps.
+Review past deposits, withdrawals, and transfers, each with a subject, the other
+party, and a timestamp.
 
-### Prize Bars
-
-Prize bars are physical in-game items that can be redeemed for credits.
-Click **REDEEM** in the banking window and place prize bars from your inventory
-into the redemption slot.
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `/balance` | Check your current credit balance |
-| `/pay <player> <amount>` | Transfer credits to another player |
+> **Note:** All balance changes are server-authoritative. The bank never trusts
+> the client for amounts or identities, so balances cannot be edited locally.
