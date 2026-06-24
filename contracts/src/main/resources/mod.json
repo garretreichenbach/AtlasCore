@@ -1,13 +1,13 @@
 {
 	"name": "AtlasContracts",
 	"author": "VideoGoose",
-	"description": "Completable bounty, item, and escort contracts paid in Gold Bars. Depends on AtlasCore.",
-	"version": "1.0.0",
+	"description": "Completable contracts paid in Gold Bars. Depends on AtlasCore.",
+	"version": "1.0.1",
 	"starmade_version": "0.303.4",
 	"client_mod": false,
 	"server_mod": false,
 	"main_class": "atlas.contracts.AtlasContracts",
-	"smd_resource_id": 8801,
+	"smd_resource_id": 8772,
 	"dependencies": [
 		8757
 	]
